@@ -18,7 +18,7 @@ namespace PixelReaderClient
         static int updatesPerSecond = 30;
         static void Main(string[] args)
         {
-            string targetAddress = "192.168.1.17";//"127.0.0.1";
+            string targetAddress = "192.168.1.23";//"127.0.0.1";
             int targetPort = 5005;
 
             if (args.Length > 0)
@@ -159,15 +159,29 @@ namespace PixelReaderClient
             client.Dispose();
         }
 
+        static Bitmap bitmap_SinglePixel = new Bitmap(1, 1);
+        static Graphics g_Graphics = Graphics.FromImage(bitmap_SinglePixel);
+
         static Color GetColorOfPixel(Point location)
         {
             //Todo: optimise and snip multiple screen parts into one bitmap!
-            Bitmap bmp = new Bitmap(1, 1);
+
             Rectangle bounds = new Rectangle(location.X + monitorOffset.X, location.Y + monitorOffset.Y, 1, 1);
-            using (Graphics g = Graphics.FromImage(bmp))
-                g.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size);
-            return bmp.GetPixel(0, 0);
+
+
+            g_Graphics.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size);
+
+                //g.ReleaseHdc();
+                /*
+                    * Todo:
+                    * GDCs leaking!
+                    * */
+            return bitmap_SinglePixel.GetPixel(0, 0);
+            
         }
+
+        static Bitmap bitmap_MultiPixel = new Bitmap(2, 2); //temp
+        static Graphics g_Graphics_Multiple = Graphics.FromImage(bitmap_MultiPixel);
 
         static List<Color> GetColorOfManyPixels(Point startlocation, Point endlocation)
         {
@@ -178,19 +192,16 @@ namespace PixelReaderClient
 
             List<Color> output = new List<Color>();
 
-            Bitmap bmp = new Bitmap(space.Width, space.Height);
-            using (Graphics g = Graphics.FromImage(bmp))
-            {
-                g.CopyFromScreen(space.Location, Point.Empty, space.Size);              
-            }
-            
+            g_Graphics_Multiple.CopyFromScreen(space.Location, Point.Empty, space.Size);
+
             for (int h = 0; h < space.Height; h++)
             {
                 for (int w = 0; w < space.Width; w++)
                 {
-                    output.Add(bmp.GetPixel(w, h));
+                    output.Add(bitmap_MultiPixel.GetPixel(w, h));
                 }
             }
+                  
 
             return output;           
         }

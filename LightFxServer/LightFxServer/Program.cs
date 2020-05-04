@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Iot.Device.Graphics;
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.Threading;
 
 namespace LightFxServer
@@ -16,9 +18,12 @@ namespace LightFxServer
 
         static void Main(string[] args)
         {
+
+            Console.WriteLine("Light FX Server");
+            
             bool debug = true;
             Console.WriteLine("Light FX Server");
-            string targetAddress = "127.0.0.1";
+            string targetAddress = "192.168.1.23";//"127.0.0.1";
             int targetPort = 5005;
 
             bool running = true;
@@ -57,3 +62,17 @@ namespace LightFxServer
         }
     }
 }
+
+/*
+ * LightControl testLc = new LightControl();
+            while (true)
+            {
+                Console.WriteLine("Input an R,G,B value:");
+                var testinput = Console.ReadLine();
+                var values = testinput.Split(",");
+                var testColor = Color.FromArgb(255, int.Parse(values[0]), int.Parse(values[1]), int.Parse(values[2]));
+                testLc.TestStrip(testColor);
+                Console.WriteLine($"Strip set to {testColor}");
+            }
+            return;
+*/
