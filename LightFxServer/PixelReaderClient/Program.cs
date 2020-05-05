@@ -15,7 +15,7 @@ namespace PixelReaderClient
         //NB: This is specifically for Clone Hero PTB v0.24.0.1555-master
         //if it breaks it's probably because CH updated
         static Point monitorOffset = new Point(0, 0); //deal with multi     
-        static int updatesPerSecond = 30;
+        static int updatesPerSecond = 60;
         static void Main(string[] args)
         {
             string targetAddress = "192.168.1.23";//"127.0.0.1";

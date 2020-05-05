@@ -1,8 +1,10 @@
 ﻿using Iot.Device.BrickPi3.Sensors;
+using Iot.Device.Pn532.ListPassive;
 using Iot.Device.Ws28xx;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -10,15 +12,18 @@ using System.Threading.Tasks;
 
 namespace LightFxServer
 {
-    class LightControl
+    public class LightControl
     {
         //Manage colour/vel values and output to lights here
         int updatesPerSecond = 60;
         int testValue = 0;
 
+        float decayValue = 0.65f; //Multiplier
+        float offValueCap = 0.005f;
+
         LedStripOutput strip;
         System.Drawing.Color currentComboColour;
-        System.Drawing.Color[] stripStack = new System.Drawing.Color[56];
+        System.Drawing.Color[] stripStack = new System.Drawing.Color[83]; //de-hard code
 
         //Color c_EmptyComboColor = Color.FromArgb(255, 1, 1, 1); //Black
         System.Drawing.Color[] c_multiplierColours =
@@ -30,29 +35,51 @@ namespace LightFxServer
             System.Drawing.Color.FromArgb(255, 50, 150, 255) //Light blue
         };
 
+        
+
+        //TODO: List configurable note inputs, list configurable groupings of lights as dictionary? config?
+        public static int[] TriggerNotes = { 38, 48, }; //List MIDI notes to listen for here
+        public static float[] HitValues = { -1f, -1f }; //-1 off
+        public static Tuple<int, int>[] stripRanges = new Tuple<int, int>[2]; //test
+        public static System.Drawing.Color[] c_HitColours = { 
+            System.Drawing.Color.FromArgb(255, 255, 15, 0),  //R
+            System.Drawing.Color.FromArgb(255, 168, 120, 0) }; //Y
+
         public LightControl()
         {
-            //todo: launch background colour value processing
-            var bgtask = Task.Run(UpdateValues);
-            strip = new LedStripOutput(56);
+            
+            strip = new LedStripOutput(stripStack.Length);
             strip.SetStrip(System.Drawing.Color.Empty);
             currentComboColour = c_multiplierColours[0];
+
+            stripRanges[0] = Tuple.Create(0, 45); //R
+            stripRanges[1] = Tuple.Create(46, 82); //Y
+
+            var bgtask = Task.Run(UpdateValues);
         }        
+
 
         public void ProcessEvent(MidiEvent eventIn)
         {          
             //Filter to NoteOn Events
-            if (eventIn.EventType == (int)EventTypes.NoteOn)
+            if (eventIn.EventType == (int)EventTypes.NoteOn || eventIn.EventType== (int)EventTypes.HitOn && eventIn.NoteVelocity>0)
             {
                 //Filter to specific note nums#
-                if (Program.TriggerNotes.Any(nt => nt == eventIn.NoteNumber))
+                for(int i = 0; i < TriggerNotes.Length; i++)
                 {
-                    testValue = eventIn.NoteVelocity*2;
-                    //Console.WriteLine($"Note {eventIn.NoteNumber} Velocity {eventIn.NoteVelocity}"); 
+                    if(eventIn.NoteNumber == TriggerNotes[i])
+                    {
+                        HitValues[i] = eventIn.NoteVelocity / 127f;
+                        Console.WriteLine($"Set Hitvalues {i} to {HitValues[i]}");
+                        break;
+                    }
+
                 }
             }
 
-            if(eventIn.EventType == (int)EventTypes.SpecialEvent)
+            //Todo: enable/disable/threshold special events?
+            //Todo: rewrite most of this to feed out to a seperate array which gets consumed by Update
+            if(false & eventIn.EventType == (int)EventTypes.SpecialEvent)
             {
                 Console.WriteLine($"Got a {eventIn.NoteNumber} event, {eventIn.NoteVelocity} value");
 
@@ -69,7 +96,7 @@ namespace LightFxServer
                 {
                     ClearStack();
                     var comboMeter = eventIn.NoteVelocity;
-                    var SegmentLength = 5; //about 5 per segment, 6 spare at the end (0-10)
+                    var SegmentLength = 7; //about 5 per segment, 6 spare at the end (0-10)
 
                     if (comboMeter == 0) 
                     { 
@@ -95,22 +122,62 @@ namespace LightFxServer
                 
                 
 
-                strip.SetStrip(stripStack);
+                //strip.SetStrip(stripStack);
             }
         }
 
+        //Main refresh loop
         public async Task UpdateValues()
         {
-            while (true)
+            try
             {
-                if (testValue > 0)
+                Console.WriteLine("Started refreshing...");
+                while (true)
                 {
-                    //Envelope control happens here
-                    testValue = (int)Math.Floor((decimal)(testValue / 2));
-                    Console.WriteLine(new String('=', testValue));
-                }
+                    for (int i = 0; i < TriggerNotes.Length; i++)
+                    {
+                        if (HitValues[i] >= 0)
+                        {
+                            if (HitValues[i] <= offValueCap)
+                            {
+                                HitValues[i] = -1;
+                                Console.WriteLine($"HV{i} end");
+                                //Force off here
+                                SetStackRange(stripRanges[i], System.Drawing.Color.Empty);
+                            }
+                            else
+                            {
+                                Console.WriteLine($"HV{i} = {HitValues[i]}");
+                                SetStackRange(stripRanges[i], System.Drawing.Color.FromArgb(c_HitColours[i].A,
+                                    (int)(c_HitColours[i].R * HitValues[i]),
+                                    (int)(c_HitColours[i].G * HitValues[i]),
+                                    (int)(c_HitColours[i].B * HitValues[i])));
 
-                await Task.Delay((int)(1000 / updatesPerSecond));
+                                //Envelope control happens here
+                                HitValues[i] = HitValues[i] * decayValue;
+                            }
+
+                        }
+                    }
+
+                    //Refresh strip
+                    strip.SetStrip(stripStack);
+                    await Task.Delay(1000 / updatesPerSecond);
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Error in refresh loop!!!");
+                Console.WriteLine(e.ToString());
+                throw;
+            }
+        }
+
+        void SetStackRange(Tuple<int,int> targetRange, System.Drawing.Color colourInput )
+        {
+            for(int k = targetRange.Item1; k <= targetRange.Item2; k++)
+            {
+                stripStack[k] = colourInput;
             }
         }
 
@@ -143,12 +210,22 @@ namespace LightFxServer
             }
             strip.SetStrip(stripStack);
         }
+
+        public void TestStrip(System.Drawing.Color[] setColours, int offset = 0)
+        {
+            for (int i = 0; i < stripStack.Length; i++)
+            {
+                stripStack[i] = setColours[(offset+i) % setColours.Length];
+            }
+            strip.SetStrip(stripStack);
+        }
     }
 
     //Note: Not strictly MIDI event bytes, but just what I've gathered through testing
     enum EventTypes
     {
-        NoteOn = 144,
+        HitOn = 153, //2 events per hit, one with Velocity value and one with 0 Velocity to 'end' it
+        NoteOn = 144, //Actually just for keys?
         NoteOff = 128,
         //ControlChange =  244? Pitch is then a factor of NV and Vel
         //Pedal = 185, HH is a factor of Vel only
