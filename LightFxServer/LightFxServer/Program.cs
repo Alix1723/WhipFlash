@@ -24,7 +24,7 @@ namespace LightFxServer
             }
 
             //Inputs over TCP
-            //Todo: gracefully shut down, instruct comnnected clients when it happens
+            //Todo: gracefully shut down, instruct connected clients when it happens
             InputTcpServer ls = new InputTcpServer(targetAddress,targetPort);
 
             //Deal with messages

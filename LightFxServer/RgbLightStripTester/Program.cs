@@ -14,7 +14,12 @@ namespace RgbLightStripTester
         static void Main(string[] args)
         {
             Console.WriteLine("Test connected light strips");
-            testLc = new LightControl();
+            Console.WriteLine("Enter number of LEDs:");
+
+            var numberinput = Console.ReadLine();
+            int total = int.Parse(numberinput);
+            testLc = new LightControl(total);
+
 
             var bgTask = Task.Run(CyclePattern);
             
@@ -34,9 +39,7 @@ namespace RgbLightStripTester
                     var testColor = Color.FromArgb(255, int.Parse(values[0]), int.Parse(values[1]), int.Parse(values[2]));
                     testLc.TestStrip(testColor);
                     Console.WriteLine($"Strip set to {testColor}");
-                }
-
-                
+                }                
             }
         }
 

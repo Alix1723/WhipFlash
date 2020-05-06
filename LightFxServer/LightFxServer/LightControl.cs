@@ -1,29 +1,34 @@
-﻿using Iot.Device.BrickPi3.Sensors;
-using Iot.Device.Pn532.ListPassive;
-using Iot.Device.Ws28xx;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Drawing;
-using System.Globalization;
-using System.Linq;
-using System.Text;
+﻿using System;
 using System.Threading.Tasks;
 
 namespace LightFxServer
 {
     public class LightControl
     {
+        //Midi note, vel multiplier, range start, range end, colour
+        public LightChannel[] LightChannels = new LightChannel[5]
+        {
+            new LightChannel(33, 3f, 0, 35, System.Drawing.Color.FromArgb(255, 255, 120, 0)),
+            new LightChannel(38, 1f, 36, 80, System.Drawing.Color.FromArgb(255, 255, 2, 0)),
+            new LightChannel(48, 0.9f, 81, 117, System.Drawing.Color.FromArgb(255, 225, 100, 0)),
+            new LightChannel(45, 1f, 118, 154, System.Drawing.Color.FromArgb(255, 0, 15, 255)),
+            new LightChannel(41, 1f, 155, 191, System.Drawing.Color.FromArgb(255, 1, 255, 15))
+        };
+
         //Manage colour/vel values and output to lights here
         int updatesPerSecond = 60;
-        int testValue = 0;
 
-        float decayValue = 0.65f; //Multiplier
-        float offValueCap = 0.005f;
+        //Vel (envelope) control
+        float decayValue = 0.75f; 
+        float offValueCap = 0.002f;
 
-        LedStripOutput strip;
+        //Outputs
+        System.Drawing.Color[] stripStack;
+        LedStripOutput strip;      
+
+        //State information
+        bool isStarPowerOn = false;
         System.Drawing.Color currentComboColour;
-        System.Drawing.Color[] stripStack = new System.Drawing.Color[83]; //de-hard code
 
         //Color c_EmptyComboColor = Color.FromArgb(255, 1, 1, 1); //Black
         System.Drawing.Color[] c_multiplierColours =
@@ -35,29 +40,23 @@ namespace LightFxServer
             System.Drawing.Color.FromArgb(255, 50, 150, 255) //Light blue
         };
 
-        
+        public LightControl(int striplength = 0)
+        { 
+            if(striplength<1)
+            {
+                foreach(LightChannel lc in LightChannels)
+                {
+                    striplength += (lc.StripRange.Item2 - lc.StripRange.Item1);
+                }
+            }
 
-        //TODO: List configurable note inputs, list configurable groupings of lights as dictionary? config?
-        public static int[] TriggerNotes = { 38, 48, }; //List MIDI notes to listen for here
-        public static float[] HitValues = { -1f, -1f }; //-1 off
-        public static Tuple<int, int>[] stripRanges = new Tuple<int, int>[2]; //test
-        public static System.Drawing.Color[] c_HitColours = { 
-            System.Drawing.Color.FromArgb(255, 255, 15, 0),  //R
-            System.Drawing.Color.FromArgb(255, 168, 120, 0) }; //Y
-
-        public LightControl()
-        {
-            
-            strip = new LedStripOutput(stripStack.Length);
+            stripStack = new System.Drawing.Color[striplength];
+            strip = new LedStripOutput(striplength);
             strip.SetStrip(System.Drawing.Color.Empty);
             currentComboColour = c_multiplierColours[0];
 
-            stripRanges[0] = Tuple.Create(0, 45); //R
-            stripRanges[1] = Tuple.Create(46, 82); //Y
-
             var bgtask = Task.Run(UpdateValues);
         }        
-
 
         public void ProcessEvent(MidiEvent eventIn)
         {          
@@ -65,21 +64,20 @@ namespace LightFxServer
             if (eventIn.EventType == (int)EventTypes.NoteOn || eventIn.EventType== (int)EventTypes.HitOn && eventIn.NoteVelocity>0)
             {
                 //Filter to specific note nums#
-                for(int i = 0; i < TriggerNotes.Length; i++)
+                foreach(LightChannel curChannel in LightChannels)
                 {
-                    if(eventIn.NoteNumber == TriggerNotes[i])
+                    if(eventIn.NoteNumber == curChannel.ChannelTriggerNote)
                     {
-                        HitValues[i] = eventIn.NoteVelocity / 127f;
-                        Console.WriteLine($"Set Hitvalues {i} to {HitValues[i]}");
+                        curChannel.SetHitValue((eventIn.NoteVelocity / 127f));
+                        //Console.WriteLine($"Set Hitvalues {i} to {HitValues[i]}");
                         break;
                     }
 
                 }
             }
 
-            //Todo: enable/disable/threshold special events?
-            //Todo: rewrite most of this to feed out to a seperate array which gets consumed by Update
-            if(false & eventIn.EventType == (int)EventTypes.SpecialEvent)
+            //Special events 
+            if(eventIn.EventType == (int)EventTypes.SpecialEvent)
             {
                 Console.WriteLine($"Got a {eventIn.NoteNumber} event, {eventIn.NoteVelocity} value");
 
@@ -87,18 +85,18 @@ namespace LightFxServer
                 if (eventIn.NoteNumber == 2)
                 {                    
                     currentComboColour = c_multiplierColours[eventIn.NoteVelocity];
-                    UpdateStackValues(currentComboColour);
-                    Console.WriteLine($"Setting multiplier colour to: {eventIn.NoteVelocity} ({currentComboColour})");
+                    //UpdateStackValues(currentComboColour);
+                    //Console.WriteLine($"Setting multiplier colour to: {eventIn.NoteVelocity} ({currentComboColour})");
+                    isStarPowerOn = (eventIn.NoteVelocity == 4);
                 }
                 //Combo meter
-                //Todo: also need to update for SP change
                 if (eventIn.NoteNumber == 1)
                 {
-                    ClearStack();
+                    //ClearStack();
                     var comboMeter = eventIn.NoteVelocity;
                     var SegmentLength = 7; //about 5 per segment, 6 spare at the end (0-10)
 
-                    if (comboMeter == 0) 
+                    /*if (comboMeter == 0) 
                     { 
                         for(int i = 0; i < stripStack.Length; i++) 
                         { 
@@ -115,14 +113,10 @@ namespace LightFxServer
                                 stripStack[j + ((i - 1) * SegmentLength)] = (comboMeter >= i) ? currentComboColour : System.Drawing.Color.Empty;
                             }
                         }
-                    }
+                    }*/
 
                     
-                }       
-                
-                
-
-                //strip.SetStrip(stripStack);
+                }                      
             }
         }
 
@@ -134,29 +128,20 @@ namespace LightFxServer
                 Console.WriteLine("Started refreshing...");
                 while (true)
                 {
-                    for (int i = 0; i < TriggerNotes.Length; i++)
-                    {
-                        if (HitValues[i] >= 0)
+                    foreach(LightChannel lightChannel in LightChannels)
+                    { 
+                        if (lightChannel.HitValue >= 0)
                         {
-                            if (HitValues[i] <= offValueCap)
+                            if (lightChannel.HitValue <= offValueCap)
                             {
-                                HitValues[i] = -1;
-                                Console.WriteLine($"HV{i} end");
-                                //Force off here
-                                SetStackRange(stripRanges[i], System.Drawing.Color.Empty);
-                            }
-                            else
-                            {
-                                Console.WriteLine($"HV{i} = {HitValues[i]}");
-                                SetStackRange(stripRanges[i], System.Drawing.Color.FromArgb(c_HitColours[i].A,
-                                    (int)(c_HitColours[i].R * HitValues[i]),
-                                    (int)(c_HitColours[i].G * HitValues[i]),
-                                    (int)(c_HitColours[i].B * HitValues[i])));
-
-                                //Envelope control happens here
-                                HitValues[i] = HitValues[i] * decayValue;
+                                lightChannel.SetHitValue(-1f);
                             }
 
+                            //Apply drum colours
+                            SetStackRange(lightChannel.StripRange, lightChannel.GetMultipliedColour());
+
+                            //Envelope control happens here
+                            lightChannel.DecayHitValue(decayValue);
                         }
                     }
 
@@ -167,7 +152,7 @@ namespace LightFxServer
             }
             catch(Exception e)
             {
-                Console.WriteLine("Error in refresh loop!!!");
+                Console.WriteLine("Exception in refresh loop");
                 Console.WriteLine(e.ToString());
                 throw;
             }
@@ -188,7 +173,8 @@ namespace LightFxServer
                 stripStack[i] = System.Drawing.Color.Transparent;
             }
         }
-
+        
+        //todo: refactor
         void UpdateStackValues(System.Drawing.Color newColour)
         {
             for (int i = 0; i < stripStack.Length; i++)
@@ -198,8 +184,6 @@ namespace LightFxServer
                     stripStack[i] = newColour;
                 }
             }
-
-            strip.SetStrip(stripStack);
         }
 
         public void TestStrip(System.Drawing.Color setColour)
