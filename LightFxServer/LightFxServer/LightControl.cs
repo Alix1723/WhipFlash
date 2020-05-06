@@ -1,5 +1,4 @@
-﻿using Iot.Device.BrickPi3.Sensors;
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
 namespace LightFxServer
@@ -18,13 +17,15 @@ namespace LightFxServer
 
         //Options
         bool StarPowerOverridesColours = true;
-        bool StarPowerBacklights = true;     
+        bool StarPowerBacklights = true;
+        bool StarPowerAnimates = true;
+        float StarPowerAnimSpeed = 8f; //In LED/s sec
 
         //Manage colour/vel values and output to lights here
         int updatesPerSecond = 60;
 
         //Vel (envelope) control
-        float decayValue = 0.75f; 
+        float decayValue = 0.70f; 
         float offValueCap = 0.002f;
 
         //Outputs
@@ -34,6 +35,7 @@ namespace LightFxServer
         //State information
         bool isStarPowerOn = false;
         System.Drawing.Color currentComboColour;
+        float starPowerAnimationCycle = 0; //quantises to int...
 
         //Color c_EmptyComboColor = Color.FromArgb(255, 1, 1, 1); //Black
         System.Drawing.Color[] c_multiplierColours =
@@ -47,6 +49,22 @@ namespace LightFxServer
 
         System.Drawing.Color c_StarPowerBackgroundColour = System.Drawing.Color.FromArgb(255, 1, 3, 5); //Faint blue
         System.Drawing.Color c_StarPowerForegroundColour = System.Drawing.Color.FromArgb(255, 50, 155, 255); //Light blue
+
+        System.Drawing.Color[] c_StarPowerBackgroundColourPattern = new[] {
+            System.Drawing.Color.FromArgb(255, 0, 0, 2),
+            System.Drawing.Color.FromArgb(255, 0, 0, 2),
+            System.Drawing.Color.FromArgb(255, 0, 1, 3),
+            System.Drawing.Color.FromArgb(255, 0, 1, 3),
+            System.Drawing.Color.FromArgb(255, 1, 2, 4),
+            System.Drawing.Color.FromArgb(255, 1, 2, 4),
+            System.Drawing.Color.FromArgb(255, 1, 3, 5),
+            System.Drawing.Color.FromArgb(255, 1, 3, 5),
+            System.Drawing.Color.FromArgb(255, 1, 2, 4),
+            System.Drawing.Color.FromArgb(255, 1, 2, 4),
+            System.Drawing.Color.FromArgb(255, 0, 1, 3),
+            System.Drawing.Color.FromArgb(255, 0, 1, 3),
+        }; //Faint blue
+
 
         public LightControl(int striplength = 0)
         { 
@@ -69,7 +87,7 @@ namespace LightFxServer
         public void ProcessEvent(MidiEvent eventIn)
         {          
             //Filter to NoteOn Events
-            if (eventIn.EventType == (int)EventTypes.NoteOn || eventIn.EventType== (int)EventTypes.HitOn && eventIn.NoteVelocity>0)
+            if (eventIn.EventType == (int)EventTypes.NoteOn || eventIn.EventType == (int)EventTypes.HitOn && eventIn.NoteVelocity>0)
             {
                 //Filter to specific note nums#
                 foreach(LightChannel curChannel in LightChannels)
@@ -140,8 +158,31 @@ namespace LightFxServer
                     { 
                         if(StarPowerBacklights)
                         {                      
-                            SetStackRange(lightChannel.StripRange, isStarPowerOn ? c_StarPowerBackgroundColour : System.Drawing.Color.Empty);
+                            if(isStarPowerOn)
+                            {
+                                if (StarPowerAnimates)
+                                {
+                                    SetStackRange(lightChannel.StripRange, c_StarPowerBackgroundColourPattern, (int)starPowerAnimationCycle);
+                                    starPowerAnimationCycle = (starPowerAnimationCycle + ((1.0f/ (float)updatesPerSecond)*(StarPowerAnimSpeed))) % c_StarPowerBackgroundColourPattern.Length; //Todo use time-based
+                                }
+                                else
+                                {
+                                    SetStackRange(lightChannel.StripRange, c_StarPowerBackgroundColour);
+                                }
+                            }
+                            else
+                            {
+                                //Clear stack 
+                                SetStackRange(lightChannel.StripRange, System.Drawing.Color.Empty);
+                            }
                         }
+                        else
+                        {
+                            //Clear stack 
+                            SetStackRange(lightChannel.StripRange, System.Drawing.Color.Empty);
+                        } 
+
+                        //Hit colours
                         if (lightChannel.HitValue >= 0)
                         {
                             if (lightChannel.HitValue <= offValueCap)
@@ -149,7 +190,6 @@ namespace LightFxServer
                                 lightChannel.SetHitValue(-1f);
                             }
 
-                            //Apply drum colours
                             OverlayStackRange(lightChannel.StripRange, 
                                 (StarPowerOverridesColours && isStarPowerOn) ? 
                                 lightChannel.GetMultipliedColour(c_StarPowerForegroundColour) : 
@@ -179,6 +219,15 @@ namespace LightFxServer
             for(int k = targetRange.Item1; k <= targetRange.Item2; k++)
             {
                 stripStack[k] = colourInput;
+            }
+        }
+
+        //Set (overwrite) colours
+        public void SetStackRange(Tuple<int, int> targetRange, System.Drawing.Color[] colourInputs, int offset = 0)
+        {
+            for (int k = targetRange.Item1; k <= targetRange.Item2; k++)
+            {
+                stripStack[k] = colourInputs[(k+ offset) % colourInputs.Length];
             }
         }
 

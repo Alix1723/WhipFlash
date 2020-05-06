@@ -20,7 +20,6 @@ namespace RgbLightStripTester
             int total = int.Parse(numberinput);
             testLc = new LightControl(total);
 
-
             var bgTask = Task.Run(CyclePattern);
             
             while (true)

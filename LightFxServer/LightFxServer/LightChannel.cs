@@ -4,7 +4,7 @@ namespace LightFxServer
 {
     public class LightChannel
     {
-        public float HitValue { get; private set; } = -1f;                                       //Brightness of the lights, updated each refresh
+        public float HitValue { get; private set; } = -1f;                  //Brightness of the lights, updated each refresh
         public int ChannelTriggerNote { get; private set; }                //Midi value to listen for (todo: multiple?)
         private float velocityModifier = 1.0f;                              //Multiplier from input vel to output brightness
         public Tuple<int, int> StripRange { get; private set; }            //LED indexes to start and end on;
