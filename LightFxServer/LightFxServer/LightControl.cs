@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Iot.Device.BrickPi3.Sensors;
+using System;
 using System.Threading.Tasks;
 
 namespace LightFxServer
@@ -14,6 +15,10 @@ namespace LightFxServer
             new LightChannel(45, 1f, 118, 154, System.Drawing.Color.FromArgb(255, 0, 15, 255)),
             new LightChannel(41, 1f, 155, 191, System.Drawing.Color.FromArgb(255, 1, 255, 15))
         };
+
+        //Options
+        bool StarPowerOverridesColours = true;
+        bool StarPowerBacklights = true;     
 
         //Manage colour/vel values and output to lights here
         int updatesPerSecond = 60;
@@ -40,13 +45,16 @@ namespace LightFxServer
             System.Drawing.Color.FromArgb(255, 50, 150, 255) //Light blue
         };
 
+        System.Drawing.Color c_StarPowerBackgroundColour = System.Drawing.Color.FromArgb(255, 1, 3, 5); //Faint blue
+        System.Drawing.Color c_StarPowerForegroundColour = System.Drawing.Color.FromArgb(255, 50, 155, 255); //Light blue
+
         public LightControl(int striplength = 0)
         { 
             if(striplength<1)
             {
                 foreach(LightChannel lc in LightChannels)
                 {
-                    striplength += (lc.StripRange.Item2 - lc.StripRange.Item1);
+                    striplength += (lc.StripRange.Item2+1) - lc.StripRange.Item1;
                 }
             }
 
@@ -94,7 +102,7 @@ namespace LightFxServer
                 {
                     //ClearStack();
                     var comboMeter = eventIn.NoteVelocity;
-                    var SegmentLength = 7; //about 5 per segment, 6 spare at the end (0-10)
+                    //var SegmentLength = 7; //about 5 per segment, 6 spare at the end (0-10)
 
                     /*if (comboMeter == 0) 
                     { 
@@ -130,6 +138,10 @@ namespace LightFxServer
                 {
                     foreach(LightChannel lightChannel in LightChannels)
                     { 
+                        if(StarPowerBacklights)
+                        {                      
+                            SetStackRange(lightChannel.StripRange, isStarPowerOn ? c_StarPowerBackgroundColour : System.Drawing.Color.Empty);
+                        }
                         if (lightChannel.HitValue >= 0)
                         {
                             if (lightChannel.HitValue <= offValueCap)
@@ -138,7 +150,10 @@ namespace LightFxServer
                             }
 
                             //Apply drum colours
-                            SetStackRange(lightChannel.StripRange, lightChannel.GetMultipliedColour());
+                            OverlayStackRange(lightChannel.StripRange, 
+                                (StarPowerOverridesColours && isStarPowerOn) ? 
+                                lightChannel.GetMultipliedColour(c_StarPowerForegroundColour) : 
+                                lightChannel.GetMultipliedColour());
 
                             //Envelope control happens here
                             lightChannel.DecayHitValue(decayValue);
@@ -158,7 +173,8 @@ namespace LightFxServer
             }
         }
 
-        void SetStackRange(Tuple<int,int> targetRange, System.Drawing.Color colourInput )
+        //Set (overwrite) colours
+        public void SetStackRange(Tuple<int,int> targetRange, System.Drawing.Color colourInput )
         {
             for(int k = targetRange.Item1; k <= targetRange.Item2; k++)
             {
@@ -166,7 +182,25 @@ namespace LightFxServer
             }
         }
 
-        void ClearStack()
+        //Add colours together on the stack
+        public void AddStackRange(Tuple<int, int> targetRange, System.Drawing.Color addColourInput)
+        {
+            for (int k = targetRange.Item1; k <= targetRange.Item2; k++)
+            {
+                stripStack[k] = AddColours(stripStack[k], addColourInput); //
+            }
+        }
+
+        //Combine colours already on the stack
+        public void OverlayStackRange(Tuple<int, int> targetRange, System.Drawing.Color overlayColourInput)
+        {
+            for (int k = targetRange.Item1; k <= targetRange.Item2; k++)
+            {
+                stripStack[k] = OverlayColours(stripStack[k], overlayColourInput);
+            }
+        }
+
+        public void ClearStack()
         {
             for (int i = 0; i < stripStack.Length; i++)
             {
@@ -174,15 +208,11 @@ namespace LightFxServer
             }
         }
         
-        //todo: refactor
-        void UpdateStackValues(System.Drawing.Color newColour)
+        public void ClearStack(System.Drawing.Color newColour)
         {
             for (int i = 0; i < stripStack.Length; i++)
             {
-                if (stripStack[i].A > 0)
-                {
-                    stripStack[i] = newColour;
-                }
+                stripStack[i] = newColour;
             }
         }
 
@@ -202,6 +232,24 @@ namespace LightFxServer
                 stripStack[i] = setColours[(offset+i) % setColours.Length];
             }
             strip.SetStrip(stripStack);
+        }
+
+        private System.Drawing.Color AddColours(System.Drawing.Color a, System.Drawing.Color b)
+        {
+            return System.Drawing.Color.FromArgb(
+                Math.Clamp((int)(a.A * b.A), 0, 255),
+                Math.Clamp((int)(a.R * b.R), 0, 255),
+                Math.Clamp((int)(a.G * b.G), 0, 255),
+                Math.Clamp((int)(a.B * b.B), 0, 255));
+        }
+
+        private System.Drawing.Color OverlayColours(System.Drawing.Color a, System.Drawing.Color b)
+        {
+            return System.Drawing.Color.FromArgb(
+                Math.Max(a.A,b.A),
+                Math.Max(a.R, b.R),
+                Math.Max(a.G, b.G),
+                Math.Max(a.B, b.B));
         }
     }
 

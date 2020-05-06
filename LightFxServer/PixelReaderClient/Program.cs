@@ -77,86 +77,90 @@ namespace PixelReaderClient
             int ComboChangeNote = 1;
             int MultiplierChangeNote = 2;
 
-            while (true)
+            try
             {
-                string finalOutput = "";
-                if (GetActiveWindowTitle() == "Clone Hero")
+                while (true)
                 {
-                    //Reading Pixels...
-                    isPlaying = (SumColor(GetColorOfPixel(p_HighwayLeft)) > highwayThreshold &&
-                        SumColor(GetColorOfPixel(p_HighwayRight)) > highwayThreshold);
-
-                    if (isPlaying)
+                    string finalOutput = "";
+                    if (GetActiveWindowTitle() == "Clone Hero")
                     {
-                        //Combo meter
-                        int Combo = 0;                     
-                        foreach (Point p in ComboMeter)
+                        //Reading Pixels...
+                        isPlaying = (SumColor(GetColorOfPixel(p_HighwayLeft)) > highwayThreshold &&
+                            SumColor(GetColorOfPixel(p_HighwayRight)) > highwayThreshold);
+
+                        if (isPlaying)
                         {
-                            if (SumColor(GetColorOfPixel(p)) > darkThreshold)
+                            //Combo meter
+                            int Combo = 0;
+                            foreach (Point p in ComboMeter)
                             {
-                                Combo++;
-                            }
-                        }
-
-                        if (LastCombo != Combo)
-                        {
-                            finalOutput += $"{SpecialEventType},{ComboChangeNote},{Combo},0,0,";
-                            LastCombo = Combo;
-                        }
-
-                        //Multiplier colour      
-                        try
-                        {
-                            Color MultiplierColour = GetAverage(GetColorOfManyPixels(p_MultiplierStart, p_MultiplierEnd));
-
-                            if (GetDistance(MultiplierColour, LastColor) > colourChangeDelta)
-                            {
-                                //Console.WriteLine($"------Changed!-----");
-                                var lowest = 99999;
-                                KeyValuePair<string, Color> closest = KeyValuePair.Create("",Color.Empty);
-
-                                //Approximate...
-                                foreach(KeyValuePair<string,Color> entry in c_MultiplierColours)
+                                if (SumColor(GetColorOfPixel(p)) > darkThreshold)
                                 {
-                                    var mcol = entry.Value;
-                                    var dist = GetDistance(mcol, MultiplierColour);
-                                    if (dist < lowest)
+                                    Combo++;
+                                }
+                            }
+
+                            if (LastCombo != Combo)
+                            {
+                                finalOutput += $"{SpecialEventType},{ComboChangeNote},{Combo},0,0,";
+                                LastCombo = Combo;
+                            }
+
+                            //Multiplier colour      
+                            try
+                            {
+                                Color MultiplierColour = GetAverage(GetColorOfManyPixels(p_MultiplierStart, p_MultiplierEnd));
+
+                                if (GetDistance(MultiplierColour, LastColor) > colourChangeDelta)
+                                {
+                                    //Console.WriteLine($"------Changed!-----");
+                                    var lowest = 99999;
+                                    KeyValuePair<string, Color> closest = KeyValuePair.Create("", Color.Empty);
+
+                                    //Approximate...
+                                    foreach (KeyValuePair<string, Color> entry in c_MultiplierColours)
                                     {
-                                        lowest = dist;
-                                        closest = entry;
+                                        var mcol = entry.Value;
+                                        var dist = GetDistance(mcol, MultiplierColour);
+                                        if (dist < lowest)
+                                        {
+                                            lowest = dist;
+                                            closest = entry;
+                                        }
                                     }
+
+                                    Console.WriteLine($"{closest.Key}");
+                                    finalOutput += $"{SpecialEventType},{MultiplierChangeNote},{closest.Key.Substring(0, 1)},0,0,";
                                 }
 
-                                Console.WriteLine($"{closest.Key}");
-                                finalOutput += $"{SpecialEventType},{MultiplierChangeNote},{closest.Key.Substring(0,1)},0,0,";
+                                LastColor = MultiplierColour;
                             }
-
-                            LastColor = MultiplierColour;
+                            catch (Exception e)
+                            {
+                                Console.WriteLine(e.ToString());
+                            }
                         }
-                        catch(Exception e)
+
+                        //Finally, output to server
+                        if (finalOutput.Length > 0)
                         {
-                            Console.WriteLine(e.ToString());
+                            TransmitMessage(finalOutput, stream);
                         }
-                    }
 
-                    //Finally, output to server
-                    if (finalOutput.Length > 0)
+                        Thread.Sleep(1000 / updatesPerSecond);
+                    }
+                    else
                     {
-                        TransmitMessage(finalOutput,stream);
+                        Thread.Sleep(1000 / 5);
                     }
-
-                    Thread.Sleep(1000 / updatesPerSecond);
                 }
-                else
-                {
-                    Thread.Sleep(1000 / 5);
-                }               
             }
-
-            //Exit
-            stream.Close();
-            client.Close();
-            client.Dispose();
+            finally
+            {
+                stream.Close();
+                client.Close();
+                client.Dispose();
+            }
         }
 
         static Bitmap bitmap_SinglePixel = new Bitmap(1, 1);

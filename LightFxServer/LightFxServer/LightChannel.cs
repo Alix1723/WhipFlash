@@ -38,6 +38,15 @@ namespace LightFxServer
                 Math.Clamp((int)(HitColour.B * HitValue), 0, 255)); 
         }
 
+        public System.Drawing.Color GetMultipliedColour(System.Drawing.Color overrideColour)
+        {
+            return System.Drawing.Color.FromArgb(
+                Math.Clamp((int)(overrideColour.A * HitValue), 0, 255),
+                Math.Clamp((int)(overrideColour.R * HitValue), 0, 255),
+                Math.Clamp((int)(overrideColour.G * HitValue), 0, 255),
+                Math.Clamp((int)(overrideColour.B * HitValue), 0, 255));
+        }
+
         //todo: make serializable
     }
 }
