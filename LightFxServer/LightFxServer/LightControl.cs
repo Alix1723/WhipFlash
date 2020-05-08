@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace LightFxServer
@@ -18,7 +19,9 @@ namespace LightFxServer
             new LightChannel(49, 1.2f, 192, 206, System.Drawing.Color.FromArgb(255, 1, 255, 15)), //g
             new LightChannel(51, 1.2f, 207, 221, System.Drawing.Color.FromArgb(255, 0, 15, 255)), //b
             new LightChannel(26, 1.2f, 222, 236, System.Drawing.Color.FromArgb(255, 225, 100, 0)), //y
-            new LightChannel(22, 1f, 237, 251, System.Drawing.Color.FromArgb(255, 225, 100, 0)) //y
+            new LightChannel(new[]{22, 56}, 1f, 237, 251, new[]{System.Drawing.Color.FromArgb(255, 225, 100, 0), System.Drawing.Color.FromArgb(255, 0, 15, 255) }), //y with b 
+
+            //new LightChannel(56, 1.2f, 237, 251, System.Drawing.Color.FromArgb(0, 15, 255)) //open hat b
         };
 
         //Options
@@ -42,6 +45,7 @@ namespace LightFxServer
         bool isStarPowerOn = false;
         System.Drawing.Color currentComboColour;
         float starPowerAnimationCycle = 0; //quantises to int...
+        bool debugmode;
 
         //Color c_EmptyComboColor = Color.FromArgb(255, 1, 1, 1); //Black
         System.Drawing.Color[] c_multiplierColours =
@@ -73,12 +77,14 @@ namespace LightFxServer
 
 
         public LightControl(int striplength = 0)
-        { 
-            if(striplength<1)
+        {
+            debugmode = false;
+
+            if (striplength<1)
             {
                 foreach(LightChannel lc in LightChannels)
                 {
-                    striplength += (lc.StripRange.Item2+1) - lc.StripRange.Item1;
+                    striplength = Math.Max(striplength, lc.StripRange.Item2+1);
                 }
             }
 
@@ -98,13 +104,15 @@ namespace LightFxServer
                 //Filter to specific note nums#
                 foreach(LightChannel curChannel in LightChannels)
                 {
-                    if(eventIn.NoteNumber == curChannel.ChannelTriggerNote)
+                    for (int i = 0; i < curChannel.ChannelTriggerNotes.Length; i++)
                     {
-                        curChannel.SetHitValue((eventIn.NoteVelocity / 127f));
-                        //Console.WriteLine($"Set Hitvalues {i} to {HitValues[i]}");
-                        break;
+                        if (eventIn.NoteNumber == curChannel.ChannelTriggerNotes[i])
+                        {
+                            curChannel.SetHitValue((eventIn.NoteVelocity / 127f));
+                            curChannel.SetNoteIndex(i);
+                            break;
+                        }
                     }
-
                 }
             }
 
@@ -135,7 +143,15 @@ namespace LightFxServer
                 Console.WriteLine("Started refreshing...");
                 while (true)
                 {
-                    foreach(LightChannel lightChannel in LightChannels)
+                    if (debugmode)
+                    {
+                        Console.Clear();
+                        Console.WriteLine("LC debug:");
+                    }
+
+                    ClearStack();
+
+                    foreach (LightChannel lightChannel in LightChannels)
                     { 
                         if(StarPowerBacklights)
                         {                      
@@ -151,18 +167,8 @@ namespace LightFxServer
                                     SetStackRange(lightChannel.StripRange, c_StarPowerBackgroundColour);
                                 }
                             }
-                            else
-                            {
-                                //Clear stack 
-                                SetStackRange(lightChannel.StripRange, System.Drawing.Color.Empty);
-                            }
                         }
-                        else
-                        {
-                            //Clear stack 
-                            SetStackRange(lightChannel.StripRange, System.Drawing.Color.Empty);
-                        } 
-
+ 
                         //Hit colours
                         if (lightChannel.HitValue >= 0)
                         {
@@ -179,7 +185,15 @@ namespace LightFxServer
                             //Envelope control happens here
                             lightChannel.DecayHitValue(decayValue);
                         }
+
+                        //debug
+                        if (debugmode)
+                        {
+                            Console.WriteLine($"Channnel note# {lightChannel.ChannelTriggerNotes[0]} / HV {lightChannel.HitValue} / range {lightChannel.StripRange.Item1}-{lightChannel.StripRange.Item2} / colour {lightChannel.HitColours[0]}");
+                        }
                     }
+
+                    
 
                     //Refresh strip
                     strip.SetStrip(stripStack);
@@ -194,7 +208,7 @@ namespace LightFxServer
             }
         }
 
-        //Set (overwrite) colours
+        //Set (overwrite) colour
         public void SetStackRange(Tuple<int,int> targetRange, System.Drawing.Color colourInput )
         {
             for(int k = targetRange.Item1; k <= targetRange.Item2; k++)
@@ -234,7 +248,7 @@ namespace LightFxServer
         {
             for (int i = 0; i < stripStack.Length; i++)
             {
-                stripStack[i] = System.Drawing.Color.Transparent;
+                stripStack[i] = System.Drawing.Color.Empty;
             }
         }
         

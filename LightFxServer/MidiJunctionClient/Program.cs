@@ -8,11 +8,13 @@ namespace MidiJunctionClient
 {
     class Program
     {
+        static TcpClient client;
+        static NetworkStream stream;
         static void Main(string[] args)
         {
             Console.WriteLine("MIDI Message splitter client");
 
-            bool testMode = true;
+            bool testMode = false;
 
             string targetAddress = "192.168.1.23";//"127.0.0.1";
             int targetPort = 5005;
@@ -25,8 +27,8 @@ namespace MidiJunctionClient
 
             if (!testMode)
             {
-                TcpClient client = new TcpClient(targetAddress, targetPort);
-                NetworkStream stream = client.GetStream();
+                client = new TcpClient(targetAddress, targetPort);
+                stream = client.GetStream();
             }
 
             var access = MidiAccessManager.Default;
@@ -72,7 +74,11 @@ namespace MidiJunctionClient
             input.MessageReceived += (object sender, MidiReceivedEventArgs e)
                =>
             {
-                if (!testMode)
+                if (testMode)
+                {
+                    //Testing
+                }
+                else
                 {
                     string[] outputs = new string[5] { "0", "0", "0", "0", "0" };
 
@@ -81,7 +87,7 @@ namespace MidiJunctionClient
                         outputs[i] = e.Data[i].ToString();
                     }
                     outputs[4] = e.Timestamp.ToString();
-                    TransmitMessage($"{outputs[0]},{outputs[1]},{outputs[2]},{outputs[3]},{outputs[4]}", stream);
+                    TransmitMessage($"{outputs[0]},{outputs[1]},{outputs[2]},{outputs[3]},{outputs[4]},", stream);
                 }
 
                 output.Send(e.Data, 0, e.Data.Length, e.Timestamp);
