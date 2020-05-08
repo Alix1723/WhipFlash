@@ -5,14 +5,20 @@ namespace LightFxServer
 {
     public class LightControl
     {
+        //todo: overlapping ranges for multiple notes
         //Midi note, vel multiplier, range start, range end, colour
-        public LightChannel[] LightChannels = new LightChannel[5]
+        public LightChannel[] LightChannels = new LightChannel[]
         {
-            new LightChannel(33, 3f, 0, 35, System.Drawing.Color.FromArgb(255, 255, 120, 0)),
-            new LightChannel(38, 1f, 36, 80, System.Drawing.Color.FromArgb(255, 255, 2, 0)),
-            new LightChannel(48, 0.9f, 81, 117, System.Drawing.Color.FromArgb(255, 225, 100, 0)),
-            new LightChannel(45, 1f, 118, 154, System.Drawing.Color.FromArgb(255, 0, 15, 255)),
-            new LightChannel(41, 1f, 155, 191, System.Drawing.Color.FromArgb(255, 1, 255, 15))
+            new LightChannel(33, 3f, 0, 35, System.Drawing.Color.FromArgb(255, 255, 120, 0)), //O
+            new LightChannel(38, 1f, 36, 80, System.Drawing.Color.FromArgb(255, 255, 2, 0)), //R
+            new LightChannel(48, 0.9f, 81, 117, System.Drawing.Color.FromArgb(255, 225, 100, 0)), //Y
+            new LightChannel(45, 1f, 118, 154, System.Drawing.Color.FromArgb(255, 0, 15, 255)), //B
+            new LightChannel(41, 1f, 155, 191, System.Drawing.Color.FromArgb(255, 1, 255, 15)), //G
+
+            new LightChannel(49, 1.2f, 192, 206, System.Drawing.Color.FromArgb(255, 1, 255, 15)), //g
+            new LightChannel(51, 1.2f, 207, 221, System.Drawing.Color.FromArgb(255, 0, 15, 255)), //b
+            new LightChannel(26, 1.2f, 222, 236, System.Drawing.Color.FromArgb(255, 225, 100, 0)), //y
+            new LightChannel(22, 1f, 237, 251, System.Drawing.Color.FromArgb(255, 225, 100, 0)) //y
         };
 
         //Options
@@ -110,38 +116,13 @@ namespace LightFxServer
                 //Multiplier (and SP)
                 if (eventIn.NoteNumber == 2)
                 {                    
-                    currentComboColour = c_multiplierColours[eventIn.NoteVelocity];
-                    //UpdateStackValues(currentComboColour);
-                    //Console.WriteLine($"Setting multiplier colour to: {eventIn.NoteVelocity} ({currentComboColour})");
-                    isStarPowerOn = (eventIn.NoteVelocity == 4);
+                    currentComboColour = c_multiplierColours[eventIn.NoteVelocity];//Combo 
+                    SetStarPower(eventIn.NoteVelocity == 4);
                 }
                 //Combo meter
                 if (eventIn.NoteNumber == 1)
                 {
-                    //ClearStack();
-                    var comboMeter = eventIn.NoteVelocity;
-                    //var SegmentLength = 7; //about 5 per segment, 6 spare at the end (0-10)
-
-                    /*if (comboMeter == 0) 
-                    { 
-                        for(int i = 0; i < stripStack.Length; i++) 
-                        { 
-                            stripStack[i] = System.Drawing.Color.Empty; 
-                        }
-                    }
-                    else
-                    {
-
-                        for (int i = 1; i < 11; i++)
-                        { //Combo goes 0 - 10 (11 values)
-                            for (int j = 0; j < SegmentLength; j++)
-                            {
-                                stripStack[j + ((i - 1) * SegmentLength)] = (comboMeter >= i) ? currentComboColour : System.Drawing.Color.Empty;
-                            }
-                        }
-                    }*/
-
-                    
+                    var comboMeter = eventIn.NoteVelocity;                  
                 }                      
             }
         }
@@ -299,6 +280,11 @@ namespace LightFxServer
                 Math.Max(a.R, b.R),
                 Math.Max(a.G, b.G),
                 Math.Max(a.B, b.B));
+        }
+
+        public void SetStarPower(bool enabled)
+        {
+            isStarPowerOn = enabled;
         }
     }
 

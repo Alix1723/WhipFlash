@@ -1,10 +1,6 @@
-﻿using System;
-
-using Iot.Device.Ws28xx;
+﻿using Iot.Device.Ws28xx;
 using System.Device.Spi;
-using System.Runtime.CompilerServices;
 using Iot.Device.Graphics;
-using Iot.Device.BrickPi3.Sensors;
 
 namespace LightFxServer
 {

@@ -10,8 +10,9 @@ namespace LightFxServer
 
         static void Main(string[] args)
         {          
-            bool debug = true;
+            bool debug = false;
             Console.WriteLine("Light FX Server");
+            LightControl control = new LightControl();
             string targetAddress = "192.168.1.23";//"127.0.0.1";
             int targetPort = 5005;
 
@@ -19,8 +20,12 @@ namespace LightFxServer
 
             if (args.Length > 0) 
             {
-                if (args[0] != null) { targetAddress = args[0]; }
-                if (args[1] != null) { int.TryParse(args[1], out targetPort); }
+                if (args[0] == "testsp") { control.SetStarPower(true); }
+                else
+                {
+                    if (args[0] != null) { targetAddress = args[0]; }
+                    if (args[1] != null) { int.TryParse(args[1], out targetPort); }
+                }
             }
 
             //Inputs over TCP
@@ -28,7 +33,7 @@ namespace LightFxServer
             InputTcpServer ls = new InputTcpServer(targetAddress,targetPort);
 
             //Deal with messages
-            LightControl control = new LightControl();
+            
             MidiEvent curEvent;
             while (running)
             {             
