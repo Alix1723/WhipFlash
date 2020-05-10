@@ -57,7 +57,6 @@ namespace LightFxServer
         bool debugmode;
 
         //Colours
-        //Color c_EmptyComboColor = Color.(255, 1, 1, 1); //Black
         Colour[] c_multiplierColours =
         {
             new Colour(255, 255, 216, 50), //Yellow (0x combo)
@@ -83,7 +82,7 @@ namespace LightFxServer
             new Colour(255, 1, 2, 4),
             new Colour(255, 0, 1, 3),
             new Colour(255, 0, 1, 3),
-        }; //Faint blue
+        }; //Faint blue wave
 
         Colour c_IntensityColour = new Colour(255, 255, 255, 255);
 
@@ -327,15 +326,6 @@ namespace LightFxServer
             }
         }
 
-        public void TestStrip(Colour setColour)
-        {
-            for (int i = 0; i < stripStack.Length; i++)
-            {
-                stripStack[i] = setColour;
-            }
-            strip.SetStrip(stripStack);
-        }
-
         public void TestStrip(Colour[] setColours, int offset = 0)
         {
             for (int i = 0; i < stripStack.Length; i++)
@@ -363,26 +353,20 @@ namespace LightFxServer
 
             outLc.UpdatesPerSecond = updatesPerSecond;
             outLc.BootAnimation = BootAnimation;
-
-            outLc.StarPowerBacklights = StarPowerAnimates;
+            outLc.StarPowerAnimates = StarPowerAnimates;
             outLc.StarPowerBacklights = StarPowerBacklights;
             outLc.StarPowerOverridesColours = StarPowerOverridesColours;
             outLc.StarPowerAnimSpeed = StarPowerAnimSpeed;
-
             outLc.DefinedChannels = LightChannels;
             outLc.FastNotesDetection = FastNotesDetection;
             outLc.FastNotesTimeThreshold = FastNoteTimeThreshold;
             outLc.FastNotesVelocityThreshold = FastNoteVelocityThreshold;
-
             outLc.FlamNotesDetection = FlamNotesDetection;
             outLc.FlamNotesTimeThreshold = FlamNotesTimeThreshold;
             outLc.FlamNotesVelocityThreshold = FlamNotesVelocityThreshold;
-
             outLc.HitDecayRate = decayValue;
             outLc.HitMinimumCap = offValueCap;
-
             outLc.IntensityDecayRate = intensityDecayRate;
-
             outLc.ColourStarPowerForeground = c_StarPowerForegroundColour;
             outLc.ColourStarPowerBackground = c_StarPowerBackgroundColour;
             outLc.ColourIntensityHighlight = c_IntensityColour;

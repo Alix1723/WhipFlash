@@ -25,9 +25,9 @@ namespace LightFxServer
         [XmlElement]
         public bool FastNotesDetection;
         [XmlElement]
-        public int FastNotesTimeThreshold; 
+        public int FastNotesTimeThreshold;
         [XmlElement]
-        public float FastNotesVelocityThreshold; 
+        public float FastNotesVelocityThreshold;
 
         [XmlElement]
         public bool FlamNotesDetection;
@@ -56,7 +56,7 @@ namespace LightFxServer
 
         [XmlArray]
         public Colour[] ColoursStarPowerPattern;
-        
+
         [XmlElement]
         public Colour ColourIntensityHighlight;
 
@@ -64,15 +64,12 @@ namespace LightFxServer
         public LightChannel[] DefinedChannels;
 
 
-        static LightsConfiguration()
-        {
+        static LightsConfiguration() { }
 
+        public static LightsConfiguration LoadConfigFromFile()
+        {
+            throw new NotImplementedException();
         }
-
-        /*static LightsConfiguration LoadConfigFromFile(string filepath)
-        {
-
-        }*/
 
         public static void SaveConfigToFile(LightsConfiguration input, string filepath)
         {
@@ -84,7 +81,5 @@ namespace LightFxServer
             writer.Close();
             Console.WriteLine("Save successful.");
         }
-    }
-
-    
+    }   
 }

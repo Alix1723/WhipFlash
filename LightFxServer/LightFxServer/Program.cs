@@ -14,12 +14,11 @@ namespace LightFxServer
             Console.WriteLine("Light FX Server");
             LightControl control = new LightControl(isDebug:true);
 
-
-            LightsConfiguration.SaveConfigToFile(control.GetCurrentConfig(), "./LightServer_Config.xml");
-
             //testing
-            Console.ReadKey();
-            return;
+            //LightsConfiguration.SaveConfigToFile(control.GetCurrentConfig(), "./LightServer_Config.xml");
+            //Console.ReadKey();
+            //return;
+
             string targetAddress = "192.168.1.23";//"127.0.0.1";
             int targetPort = 5005;
 
@@ -53,6 +52,7 @@ namespace LightFxServer
                         }
                         else
                         {
+                            //Todo: extra special event to perform a program-change?
                             if (debug) { Console.WriteLine($"MIDI Event: {curEvent.ToString()}"); }
                             if (curEvent.EventType == 999) { running = false; } //special event to close server 
                             control.ProcessEvent(curEvent);

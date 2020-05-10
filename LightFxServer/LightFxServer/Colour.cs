@@ -7,13 +7,13 @@ namespace LightFxServer
     public class Colour
     {
         [XmlElement]
-        public int Alpha { get; private set; }
+        public int Alpha;
         [XmlElement]
-        public int Red { get; private set; }
+        public int Red;
         [XmlElement]
-        public int Green { get; private set; }
+        public int Green;
         [XmlElement]
-        public int Blue { get; private set; }
+        public int Blue;
 
 
         //DIY ARGB colour to hold some helper methods as well as spell it correctly I guess

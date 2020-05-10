@@ -35,8 +35,8 @@ namespace RgbLightStripTester
                 {
                     demoPattern = false;
                     var values = testinput.Split(",");
-                    var testColor = Color.FromArgb(255, int.Parse(values[0]), int.Parse(values[1]), int.Parse(values[2]));
-                    testLc.TestStrip(testColor);
+                    var testColor = new Colour(255, int.Parse(values[0]), int.Parse(values[1]), int.Parse(values[2]));
+                    testLc.ClearStack(testColor);
                     Console.WriteLine($"Strip set to {testColor}");
                 }                
             }
@@ -45,15 +45,15 @@ namespace RgbLightStripTester
         static async Task CyclePattern()
         {
             var cycle = 0; //0-7
-            Color[] pattern = new Color[]
+            Colour[] pattern = new Colour[]
             {
-                Color.FromArgb(255, 255, 0, 0),
-                Color.FromArgb(255, 128, 128, 0),
-                Color.FromArgb(255, 80, 180, 0),
-                Color.FromArgb(255, 0, 255, 0),
-                Color.FromArgb(255, 0, 128, 128),
-                Color.FromArgb(255, 0, 0, 255),
-                Color.FromArgb(255, 128, 0, 128),
+                new Colour(255, 255, 0, 0),
+                new Colour(255, 128, 128, 0),
+                new Colour(255, 80, 180, 0),
+                new Colour(255, 0, 255, 0),
+                new Colour(255, 0, 128, 128),
+                new Colour(255, 0, 0, 255),
+                new Colour(255, 128, 0, 128)
             };
 
             while(true)
