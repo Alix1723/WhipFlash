@@ -12,7 +12,14 @@ namespace LightFxServer
         {          
             bool debug = false;
             Console.WriteLine("Light FX Server");
-            LightControl control = new LightControl();
+            LightControl control = new LightControl(isDebug:true);
+
+
+            LightsConfiguration.SaveConfigToFile(control.GetCurrentConfig(), "./LightServer_Config.xml");
+
+            //testing
+            Console.ReadKey();
+            return;
             string targetAddress = "192.168.1.23";//"127.0.0.1";
             int targetPort = 5005;
 
@@ -20,7 +27,7 @@ namespace LightFxServer
 
             if (args.Length > 0) 
             {
-                if (args[0] == "testsp") { control.SetStarPower(true); }
+                if (args[0] == "testmode") { control.SetStarPower(true); debug = true; }
                 else
                 {
                     if (args[0] != null) { targetAddress = args[0]; }
@@ -30,29 +37,33 @@ namespace LightFxServer
 
             //Inputs over TCP
             //Todo: gracefully shut down, instruct connected clients when it happens
-            InputTcpServer ls = new InputTcpServer(targetAddress,targetPort);
+            InputTcpServer listenServer = new InputTcpServer(targetAddress,targetPort);
 
-            //Deal with messages
-            
+            //Deal with messages            
             MidiEvent curEvent;
-            while (running)
-            {             
-                while (MidiMessageList.TryDequeue(out curEvent))
-                {                                    
-                    if (curEvent == null)
+            try
+            {
+                while (running)
+                {
+                    while (MidiMessageList.TryDequeue(out curEvent))
                     {
-                        Console.WriteLine("Null event?");
-                    }
-                    else
-                    {
-                        if (debug) { Console.WriteLine($"MIDI Event: {curEvent.ToString()}"); }
-                        if (curEvent.EventType == 999) { running = false; } //special event to close server 
-                        control.ProcessEvent(curEvent);                        
+                        if (curEvent == null)
+                        {
+                            Console.WriteLine("Null event?");
+                        }
+                        else
+                        {
+                            if (debug) { Console.WriteLine($"MIDI Event: {curEvent.ToString()}"); }
+                            if (curEvent.EventType == 999) { running = false; } //special event to close server 
+                            control.ProcessEvent(curEvent);
+                        }
                     }
                 }
             }
-
-            ls.StopListener();
+            finally
+            {
+                listenServer.StopListener();
+            }
         }
     }
 }

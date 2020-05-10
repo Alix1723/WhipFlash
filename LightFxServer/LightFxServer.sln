@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PixelReaderClient", "PixelR
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RgbLightStripTester", "RgbLightStripTester\RgbLightStripTester.csproj", "{E97B6C52-432A-4058-B2ED-BC09C22CC233}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MidiJunctionClient", "MidiJunctionClient\MidiJunctionClient.csproj", "{7C318444-B38E-4772-B6FF-D772865D821C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MidiJunctionClient", "MidiJunctionClient\MidiJunctionClient.csproj", "{7C318444-B38E-4772-B6FF-D772865D821C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

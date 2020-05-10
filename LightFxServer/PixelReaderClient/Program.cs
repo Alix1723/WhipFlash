@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Drawing;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -30,7 +29,7 @@ namespace PixelReaderClient
             TcpClient client = new TcpClient(targetAddress, targetPort);
             NetworkStream stream = client.GetStream();
 
-            Console.WriteLine("ay gurl lemme see dem pixels");
+            Console.WriteLine("Reading for pixels from Clone Hero...");
             Point p_HighwayLeft = new Point(538, 1079);
             Point p_HighwayRight = new Point(1382, 1079);
             Point p_StarPowerHighwayA = new Point(585, 1060);

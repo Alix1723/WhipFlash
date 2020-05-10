@@ -15,7 +15,7 @@ namespace LightFxServer
             stripImage = strip.Image;
         }
 
-        public void SetStrip(System.Drawing.Color[] inputColours)
+        public void SetStrip(Colour[] inputColours)
         {
             //todo: overrun
             for(int i = 0; i < inputColours.Length; i++)

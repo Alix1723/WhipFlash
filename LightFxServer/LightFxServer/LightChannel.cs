@@ -1,34 +1,56 @@
 ﻿using System;
+using System.Xml.Serialization;
 
 namespace LightFxServer
 {
+    [Serializable]
     public class LightChannel
     {
-        public float HitValue { get; private set; } = -1f;                  //Brightness of the lights, updated each refresh
-
-        public int[] ChannelTriggerNotes { get; private set; }             //The MIDI note(s) to listen for
-              
+        [XmlArray]
+        public int[] ChannelTriggerNotes;             //The MIDI note(s) to listen for
+        [XmlElement]
         private float velocityModifier = 1.0f;                              //Multiplier from input vel to output brightness
-        public Tuple<int, int> StripRange { get; private set; }            //LED indexes to start and end on;
-        public System.Drawing.Color[] HitColours { get; private set; }       //Colour 
+        [XmlElement]
+        public int StripRangeStart;            //LED indexes to start and end on;
+        [XmlElement]
+        public int StripRangeEnd;            //LED indexes to start and end on;
+        [XmlArray]
+        public Colour[] HitColours;       //Colour 
 
-        public int LastNoteColourIndex { get; private set; } = 0;           //Which note was hit last (and therefore should use this colour)
+        [XmlIgnore]
+        public float HitValue = -1f;                  //Brightness of the lights, updated each refresh
+        [XmlIgnore]
+        public int LastNoteColourIndex = 0;           //Which note was hit last (and therefore should use this colour)
+        [XmlIgnore]
+        public float ChannelIntensity = 0f;           //Intensity multiplier (caused by fast hits and flams)
+        [XmlIgnore]
+        private int lastTimeStamp = 0;                     
+
+        public LightChannel()
+        {
+            this.ChannelTriggerNotes = new[] { 0 };
+            this.velocityModifier = 1.0f;
+            this.StripRangeStart = 0;
+            this.StripRangeEnd = 0;
+            this.HitColours = new[] { Colour.Blank() };
+        }
 
         //Single note + colour
-        public LightChannel(int trigNote, float velMod, int startRange, int endRange, System.Drawing.Color setColour, int overrideMidiNote = 0)
+        public LightChannel(int trigNote, float velMod, int startRange, int endRange, Colour setColour)
         {
-            this.ChannelTriggerNotes[0] = trigNote;
+            this.ChannelTriggerNotes = new[] { trigNote };
             this.velocityModifier = velMod;
-            this.StripRange = Tuple.Create(startRange, endRange);
-            this.HitColours[0] = setColour;
+            this.StripRangeStart = startRange;
+            this.StripRangeEnd = endRange;
+            this.HitColours = new[] { setColour };
         }
 
         //Many notes + colours
-        public LightChannel(int[] trigNotes, float velMod, int startRange, int endRange, System.Drawing.Color[] setColours, int overrideMidiNote = 0)
+        public LightChannel(int[] trigNotes, float velMod, int startRange, int endRange, Colour[] setColours)
         {
             this.ChannelTriggerNotes = trigNotes;
-            this.velocityModifier = velMod;
-            this.StripRange = Tuple.Create(startRange, endRange);
+            this.StripRangeStart = startRange;
+            this.StripRangeEnd = endRange;
             this.HitColours = setColours;
         }
 
@@ -43,27 +65,41 @@ namespace LightFxServer
             HitValue = HitValue * decay;
         }
 
-        public System.Drawing.Color GetMultipliedColour()
+        public void DecayIntensityValue(float decay)
         {
-            return System.Drawing.Color.FromArgb(
-                Math.Clamp((int)(HitColours[LastNoteColourIndex].A * HitValue), 0, 255),
-                Math.Clamp((int)(HitColours[LastNoteColourIndex].R * HitValue), 0, 255),
-                Math.Clamp((int)(HitColours[LastNoteColourIndex].G * HitValue), 0, 255),
-                Math.Clamp((int)(HitColours[LastNoteColourIndex].B * HitValue), 0, 255)); 
-        }
-
-        public System.Drawing.Color GetMultipliedColour(System.Drawing.Color overrideColour)
-        {
-            return System.Drawing.Color.FromArgb(
-                Math.Clamp((int)(overrideColour.A * HitValue), 0, 255),
-                Math.Clamp((int)(overrideColour.R * HitValue), 0, 255),
-                Math.Clamp((int)(overrideColour.G * HitValue), 0, 255),
-                Math.Clamp((int)(overrideColour.B * HitValue), 0, 255));
+            ChannelIntensity = Math.Clamp(ChannelIntensity - decay,0,1);
         }
 
         public void SetNoteIndex(int index)
         {
             LastNoteColourIndex = index;
         }
+
+        public int GetTimeFromLastHit(int nowTimestamp)
+        {
+            int difference = nowTimestamp - lastTimeStamp;
+            lastTimeStamp = nowTimestamp;
+            return difference;
+        }
+
+        public void SetIntensity(float nintensity)
+        {
+            ChannelIntensity = nintensity;
+        }
+
+        public Tuple<int,int> GetStripRange()
+        {
+            return Tuple.Create(StripRangeStart, StripRangeEnd);
+        }
+
+        public Colour GetCurrentHitColour()
+        {
+            return HitColours[LastNoteColourIndex];
+        }
+
+        public override string ToString()
+        {
+            return $"Channnel note# {this.ChannelTriggerNotes[LastNoteColourIndex]} / HV {this.HitValue} / range {this.StripRangeStart}-{this.StripRangeEnd} / colour {this.HitColours[LastNoteColourIndex]}";
+        }     
     }
 }

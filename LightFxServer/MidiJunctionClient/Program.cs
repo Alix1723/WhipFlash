@@ -8,15 +8,13 @@ namespace MidiJunctionClient
 {
     class Program
     {
-        static TcpClient client;
-        static NetworkStream stream;
         static void Main(string[] args)
         {
             Console.WriteLine("MIDI Message splitter client");
 
-            bool testMode = false;
+            //bool testMode = false;
 
-            string targetAddress = "192.168.1.23";//"127.0.0.1";
+            string targetAddress = "127.0.0.1"; //"192.168.1.23";//
             int targetPort = 5005;
 
             if (args.Length > 0)
@@ -25,11 +23,9 @@ namespace MidiJunctionClient
                 if (args[1] != null) { int.TryParse(args[1], out targetPort); }
             }
 
-            if (!testMode)
-            {
-                client = new TcpClient(targetAddress, targetPort);
-                stream = client.GetStream();
-            }
+            TcpClient client = new TcpClient(targetAddress, targetPort);
+            NetworkStream stream = client.GetStream();
+
 
             var access = MidiAccessManager.Default;
             IMidiInput input;
@@ -51,11 +47,12 @@ namespace MidiJunctionClient
             {
                 //Default          
                 chosenIdIn = access.Inputs.First().Id;
+                Console.WriteLine("Using default input...");
             }
             else
             {
                 //Choose from list
-                Console.WriteLine("Enter device ID to use:");
+                Console.WriteLine("Enter input device ID to use:");
                 chosenIdIn = Console.ReadLine();
             }
 
@@ -74,21 +71,14 @@ namespace MidiJunctionClient
             input.MessageReceived += (object sender, MidiReceivedEventArgs e)
                =>
             {
-                if (testMode)
-                {
-                    //Testing
-                }
-                else
-                {
-                    string[] outputs = new string[5] { "0", "0", "0", "0", "0" };
+                string[] outputs = new string[5] { "0", "0", "0", "0", "0" };
 
-                    for (int i = 0; i < e.Length; i++)
-                    {
-                        outputs[i] = e.Data[i].ToString();
-                    }
-                    outputs[4] = e.Timestamp.ToString();
-                    TransmitMessage($"{outputs[0]},{outputs[1]},{outputs[2]},{outputs[3]},{outputs[4]},", stream);
+                for (int i = 0; i < e.Length; i++)
+                {
+                    outputs[i] = e.Data[i].ToString();
                 }
+                outputs[4] = e.Timestamp.ToString();
+                TransmitMessage($"{outputs[0]},{outputs[1]},{outputs[2]},{outputs[3]},{outputs[4]},", stream);
 
                 output.Send(e.Data, 0, e.Data.Length, e.Timestamp);
             };
