@@ -15,8 +15,7 @@ namespace LightFxServer
         [XmlElement]
         public int Blue;
 
-
-        //DIY ARGB colour to hold some helper methods as well as spell it correctly I guess
+        //ARGB colour to hold some helper methods as well as spell it correctly I guess
         public Colour()
         {
             this.Alpha = 0;
@@ -80,6 +79,7 @@ namespace LightFxServer
                 (int)(inputA.Blue + ((inputB.Blue - inputA.Blue) * factor)));
         }
 
+        //Auto-convert to 'Color'
         public static implicit operator System.Drawing.Color(Colour x)
         {
             return System.Drawing.Color.FromArgb(x.Alpha, x.Red, x.Green, x.Blue);

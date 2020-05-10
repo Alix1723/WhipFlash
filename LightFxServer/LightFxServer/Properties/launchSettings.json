@@ -2,7 +2,7 @@
   "profiles": {
     "LightFxServer": {
       "commandName": "Project",
-      "commandLineArgs": "192.168.1.17 5005"
+      "commandLineArgs": "testmode"
     }
   }
 }

@@ -6,45 +6,32 @@ namespace LightFxServer
 {
     public class LightControl
     {
-        //todo: save and load all this from/to an XML file
-        //Midi note, vel multiplier, range start, range end, colour
-        public LightChannel[] LightChannels = new LightChannel[]
-        {
-            new LightChannel(33, 3f, 0, 35, new Colour(255, 255, 120, 0)), //O = kick
-            new LightChannel(38, 1f, 36, 80, new Colour(255, 255, 2, 0)), //R = snare
-            new LightChannel(48, 0.9f, 81, 117, new Colour(255, 225, 100, 0)), //Y = tom1
-            new LightChannel(45, 1f, 118, 154, new Colour(255, 0, 15, 255)), //B = tom2
-            new LightChannel(41, 1f, 155, 191, new Colour(255, 1, 255, 15)), //G = tom3
-
-            new LightChannel(49, 1.2f, 192, 206, new Colour(255, 1, 255, 15)), //g = cymbal1
-            new LightChannel(new[] {51, 53}, 1.2f, 207, 221, new[]{ new Colour(255, 0, 15, 255), new Colour(255, 0, 115, 185) }), //b = ride (and bell)
-            new LightChannel(26, 1.2f, 222, 236, new Colour(255, 225, 100, 0)), //y = cymbal2
-            new LightChannel(new[]{22, 56}, 1f, 237, 251, new[]{ new Colour(255, 225, 100, 0), new Colour(255, 0, 15, 255) }), //y = hat (and open hat)
-        };
+        //Channels (MIDI note(s) and colour(s) to apply to a range of LEDs
+        public LightChannel[] LightChannels;
 
         //Options
-        bool BootAnimation = true;
-        bool StarPowerOverridesColours = true;
-        bool StarPowerBacklights = true;
-        bool StarPowerAnimates = true;
-        float StarPowerAnimSpeed = 8f; //In LED/s sec
+        bool BootAnimation;
+        bool StarPowerOverridesColours;
+        bool StarPowerBacklights;
+        bool StarPowerAnimates;
+        float StarPowerAnimSpeed; //In LED/s sec
 
-        bool FastNotesDetection = true;
-        int FastNoteTimeThreshold = 100; //ms between notes to be considered 'fast'
-        float FastNoteVelocityThreshold = 0.22f; //How hard to hit to be considered 'fast'
+        bool FastNotesDetection;
+        int FastNoteTimeThreshold; //ms between notes to be considered 'fast'
+        float FastNoteVelocityThreshold; //How hard to hit to be considered 'fast'
 
-        bool FlamNotesDetection = true;
-        int FlamNotesTimeThreshold = 55; //ms between flam hits
-        float FlamNotesVelocityThreshold = 0.25f; //How hard to hit to flam (and not e.g. ghost)
+        bool FlamNotesDetection;
+        int FlamNotesTimeThreshold; //ms between flam hits
+        float FlamNotesVelocityThreshold; //How hard to hit to flam (and not e.g. ghost)
 
         //Manage colour/vel values and output to lights here
-        int updatesPerSecond = 60;
+        int updatesPerSecond;
 
         //Vel (envelope) control
-        float decayValue = 0.65f;
-        float offValueCap = 0.002f;
+        float decayValue;
+        float offValueCap;
 
-        float intensityDecayRate = 0.04f;
+        float intensityDecayRate;
 
         //Outputs
         Colour[] stripStack;
@@ -56,7 +43,7 @@ namespace LightFxServer
         float starPowerAnimationCycle = 0; //quantises to int...
         bool debugmode;
 
-        //Colours
+        //Mul colours
         Colour[] c_multiplierColours =
         {
             new Colour(255, 255, 216, 50), //Yellow (0x combo)
@@ -66,29 +53,19 @@ namespace LightFxServer
             new Colour(255, 50, 150, 255) //Light blue
         };
 
-        Colour c_StarPowerBackgroundColour = new Colour(255, 1, 3, 5); //Faint blue
-        Colour c_StarPowerForegroundColour = new Colour(255, 50, 155, 255); //Light blue
+        Colour c_StarPowerBackgroundColour;
+        Colour c_StarPowerForegroundColour;
+        Colour[] c_StarPowerBackgroundColourPattern; 
+        Colour c_IntensityColour;
 
-        Colour[] c_StarPowerBackgroundColourPattern = new[] {
-            new Colour(255, 0, 0, 2),
-            new Colour(255, 0, 0, 2),
-            new Colour(255, 0, 1, 3),
-            new Colour(255, 0, 1, 3),
-            new Colour(255, 1, 2, 4),
-            new Colour(255, 1, 2, 4),
-            new Colour(255, 1, 3, 5),
-            new Colour(255, 1, 3, 5),
-            new Colour(255, 1, 2, 4),
-            new Colour(255, 1, 2, 4),
-            new Colour(255, 0, 1, 3),
-            new Colour(255, 0, 1, 3),
-        }; //Faint blue wave
-
-        Colour c_IntensityColour = new Colour(255, 255, 255, 255);
-
-        public LightControl(int striplength = 0, bool isDebug = false)
+        public LightControl(int striplength = 0, bool isDebug = false, LightsConfiguration inputConfig = null)
         {
             debugmode = isDebug;
+
+            if(inputConfig!=null)
+            {
+                SetCurrentConfig(inputConfig);
+            }
 
             if (striplength < 1)
             {
@@ -373,6 +350,31 @@ namespace LightFxServer
             outLc.ColoursStarPowerPattern = c_StarPowerBackgroundColourPattern;
 
             return outLc;
+        }
+
+        private void SetCurrentConfig(LightsConfiguration conf)
+        {
+            this.updatesPerSecond = conf.UpdatesPerSecond;
+            this.BootAnimation = conf.BootAnimation;
+            this.StarPowerAnimates = conf.StarPowerAnimates;
+            this.StarPowerBacklights = conf.StarPowerBacklights;
+            this.StarPowerOverridesColours = conf.StarPowerOverridesColours;
+            this.StarPowerAnimSpeed = conf.StarPowerAnimSpeed;
+            this.LightChannels = conf.DefinedChannels;
+            this.FastNotesDetection = conf.FastNotesDetection;
+            this.FastNoteTimeThreshold = conf.FastNotesTimeThreshold;
+            this.FastNoteVelocityThreshold = conf.FastNotesVelocityThreshold;
+            this.FlamNotesDetection = conf.FlamNotesDetection;
+            this.FlamNotesTimeThreshold = conf.FlamNotesTimeThreshold;
+            this.FlamNotesVelocityThreshold = conf.FlamNotesVelocityThreshold;
+            this.decayValue = conf.HitDecayRate;
+            this.offValueCap = conf.HitMinimumCap;
+            this.intensityDecayRate = conf.IntensityDecayRate;
+            this.c_StarPowerForegroundColour = conf.ColourStarPowerForeground;
+            this.c_StarPowerBackgroundColour = conf.ColourStarPowerBackground;
+            this.c_IntensityColour = conf.ColourIntensityHighlight;
+            this.c_StarPowerBackgroundColourPattern = conf.ColoursStarPowerPattern;
+            Console.WriteLine("Set lights config");
         }
 
         ~LightControl()

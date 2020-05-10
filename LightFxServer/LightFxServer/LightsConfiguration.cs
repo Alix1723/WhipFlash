@@ -66,9 +66,23 @@ namespace LightFxServer
 
         static LightsConfiguration() { }
 
-        public static LightsConfiguration LoadConfigFromFile()
+        public static LightsConfiguration LoadConfigFromFile(string filepath)
         {
-            throw new NotImplementedException();
+            try
+            {
+                XmlSerializer configDeSerializer = new XmlSerializer(typeof(LightsConfiguration));
+                TextReader reader = new StreamReader(filepath);
+
+                var loadedConfig = (LightsConfiguration)configDeSerializer.Deserialize(reader);
+                reader.Close();
+                Console.WriteLine("Load successful.");
+                return loadedConfig;
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine($"Error loading configuration! {e}");
+                throw;
+            }
         }
 
         public static void SaveConfigToFile(LightsConfiguration input, string filepath)
