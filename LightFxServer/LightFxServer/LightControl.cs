@@ -6,6 +6,9 @@ namespace LightFxServer
 {
     public class LightControl
     {
+        //Use keys (on/off) or drums (hit)
+        bool KeysMode;
+
         //Channels (MIDI note(s) and colour(s) to apply to a range of LEDs
         public LightChannel[] LightChannels;
 
@@ -42,6 +45,7 @@ namespace LightFxServer
         Colour currentComboColour;
         float starPowerAnimationCycle = 0; //quantises to int...
         bool debugmode;
+        
 
         //Mul colours
         Colour[] c_multiplierColours =
@@ -89,8 +93,8 @@ namespace LightFxServer
 
         public void ProcessEvent(MidiEvent eventIn)
         {
-            //Filter to NoteOn Events
-            if (eventIn.EventType == (int)EventTypes.NoteOn || eventIn.EventType == (int)EventTypes.HitOn && eventIn.NoteVelocity > 0)
+            //Filter to note events
+            if (eventIn.EventType == (int)EventTypes.NoteOn || eventIn.EventType == (int)EventTypes.NoteOff || eventIn.EventType == (int)EventTypes.HitOn && eventIn.NoteVelocity > 0)
             {
                 //Filter to specific note nums#
                 foreach (LightChannel curChannel in LightChannels)
@@ -99,25 +103,32 @@ namespace LightFxServer
                     {
                         if (eventIn.NoteNumber == curChannel.ChannelTriggerNotes[i])
                         {
-                            curChannel.SetHitValue((eventIn.NoteVelocity / 127f));
-                            curChannel.SetNoteIndex(i);
-
-                            int noteDelta = curChannel.GetTimeFromLastHit(eventIn.TimeStamp);
-
-                            //Flams and fast notes
-                            if (noteDelta < FlamNotesTimeThreshold & FlamNotesDetection)
+                            if (eventIn.EventType == (int)EventTypes.NoteOff)
                             {
-                                if (curChannel.HitValue > FlamNotesVelocityThreshold)
-                                {
-                                    curChannel.SetIntensity(1);
-                                }
+                                curChannel.SetHitValue(0f);
                             }
-                            else if (noteDelta < FastNoteTimeThreshold & FastNotesDetection)
+                            else
                             {
-                                if (curChannel.HitValue > FastNoteVelocityThreshold) 
+                                curChannel.SetHitValue((eventIn.NoteVelocity / 127f));
+                                curChannel.SetNoteIndex(i);
+
+                                int noteDelta = curChannel.GetTimeFromLastHit(eventIn.TimeStamp);
+
+                                //Flams and fast notes
+                                if (noteDelta < FlamNotesTimeThreshold & FlamNotesDetection)
                                 {
-                                    
-                                    curChannel.SetIntensity(Math.Min(curChannel.ChannelIntensity + (curChannel.HitValue * 0.15f), 1));
+                                    if (curChannel.HitValue > FlamNotesVelocityThreshold)
+                                    {
+                                        curChannel.SetIntensity(1);
+                                    }
+                                }
+                                else if (noteDelta < FastNoteTimeThreshold & FastNotesDetection)
+                                {
+                                    if (curChannel.HitValue > FastNoteVelocityThreshold)
+                                    {
+
+                                        curChannel.SetIntensity(Math.Min(curChannel.ChannelIntensity + (curChannel.HitValue * 0.15f), 1));
+                                    }
                                 }
                             }
 
@@ -201,7 +212,8 @@ namespace LightFxServer
                                     Colour.MultiplyColours(currentChannel.GetCurrentHitColour(), currentChannel.HitValue)) ;
 
                             //Envelope control happens here
-                            currentChannel.DecayHitValue(decayValue);
+                            if (!KeysMode) { currentChannel.DecayHitValue(decayValue); } 
+                            //todo: allow this and just have a 0 decay to sustain brightness?
                         }
 
                         if (currentChannel.ChannelIntensity > 0)
@@ -328,6 +340,7 @@ namespace LightFxServer
         {
             LightsConfiguration outLc = new LightsConfiguration();
 
+            outLc.KeysMode = KeysMode;
             outLc.UpdatesPerSecond = updatesPerSecond;
             outLc.BootAnimation = BootAnimation;
             outLc.StarPowerAnimates = StarPowerAnimates;
@@ -354,6 +367,7 @@ namespace LightFxServer
 
         private void SetCurrentConfig(LightsConfiguration conf)
         {
+            this.KeysMode = conf.KeysMode;
             this.updatesPerSecond = conf.UpdatesPerSecond;
             this.BootAnimation = conf.BootAnimation;
             this.StarPowerAnimates = conf.StarPowerAnimates;

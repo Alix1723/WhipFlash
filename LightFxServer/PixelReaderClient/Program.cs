@@ -15,6 +15,8 @@ namespace PixelReaderClient
         //if it breaks it's probably because CH updated
         static Point monitorOffset = new Point(0, 0); //deal with multi     
         static int updatesPerSecond = 60;
+        static bool isFourLaneHighway = false; //drums = true, guitar/anything else = false
+
         static void Main(string[] args)
         {
             string targetAddress = "192.168.1.23";//"127.0.0.1";
@@ -30,14 +32,21 @@ namespace PixelReaderClient
             NetworkStream stream = client.GetStream();
 
             Console.WriteLine("Reading for pixels from Clone Hero...");
-            Point p_HighwayLeft = new Point(538, 1079);
-            Point p_HighwayRight = new Point(1382, 1079);
-            Point p_StarPowerHighwayA = new Point(585, 1060);
-            Point p_StarPowerHighwayB = new Point(615, 990);
-            Point p_MultiplierStart = new Point(1256, 664);
-            Point p_MultiplierEnd = new Point(1258, 666);
-            Point p_StarPowerBarStart = new Point(585, 1060);
-            Point p_StarPowerBarEnd = new Point(1200, 720);
+            Point p_HighwayLeft_Drums = new Point(538, 1079);
+            Point p_HighwayRight_Drums = new Point(1382, 1079);
+            Point p_MultiplierStart_Drums = new Point(1256, 664);
+            Point p_MultiplierEnd_Drums = new Point(1258, 666);
+
+            Point p_HighwayLeft_Guitar = new Point(508, 1079); 
+            Point p_HighwayRight_Guitar = new Point(1412, 1079);
+            Point p_MultiplierStart_Guitar = new Point(1272, 664); 
+            Point p_MultiplierEnd_Guitar = new Point(1274, 666);
+
+            //Point p_StarPowerBarStart = new Point(585, 1060);
+            //Point p_StarPowerBarEnd = new Point(1200, 720);
+            //Point p_StarPowerHighwayA = new Point(585, 1060);
+            //Point p_StarPowerHighwayB = new Point(615, 990);
+
 
             List<Point> ComboMeter = new List<Point>();
 
@@ -84,8 +93,8 @@ namespace PixelReaderClient
                     if (GetActiveWindowTitle() == "Clone Hero")
                     {
                         //Reading Pixels...
-                        isPlaying = (SumColor(GetColorOfPixel(p_HighwayLeft)) > highwayThreshold &&
-                            SumColor(GetColorOfPixel(p_HighwayRight)) > highwayThreshold);
+                        isPlaying = (SumColor(GetColorOfPixel(isFourLaneHighway ? p_HighwayLeft_Drums : p_HighwayLeft_Guitar)) > highwayThreshold &&
+                            SumColor(GetColorOfPixel(isFourLaneHighway ? p_HighwayRight_Drums : p_HighwayRight_Guitar)) > highwayThreshold);
 
                         if (isPlaying)
                         {
@@ -108,7 +117,7 @@ namespace PixelReaderClient
                             //Multiplier colour      
                             try
                             {
-                                Color MultiplierColour = GetAverage(GetColorOfManyPixels(p_MultiplierStart, p_MultiplierEnd));
+                                Color MultiplierColour = isFourLaneHighway ? GetAverage(GetColorOfManyPixels(p_MultiplierStart_Drums, p_MultiplierEnd_Drums)) : GetAverage(GetColorOfManyPixels(p_MultiplierStart_Guitar, p_MultiplierEnd_Guitar));
 
                                 if (GetDistance(MultiplierColour, LastColor) > colourChangeDelta)
                                 {

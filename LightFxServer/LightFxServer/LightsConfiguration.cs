@@ -14,6 +14,9 @@ namespace LightFxServer
         public bool BootAnimation;
 
         [XmlElement]
+        public bool KeysMode;
+
+        [XmlElement]
         public bool StarPowerOverridesColours;
         [XmlElement]
         public bool StarPowerBacklights;

@@ -12,9 +12,7 @@ namespace MidiJunctionClient
         {
             Console.WriteLine("MIDI Message splitter client");
 
-            //bool testMode = false;
-
-            string targetAddress = "127.0.0.1"; //"192.168.1.23";//
+            string targetAddress = "127.0.0.1"; 
             int targetPort = 5005;
 
             if (args.Length > 0)
@@ -26,10 +24,9 @@ namespace MidiJunctionClient
             TcpClient client = new TcpClient(targetAddress, targetPort);
             NetworkStream stream = client.GetStream();
 
-
             var access = MidiAccessManager.Default;
-            IMidiInput input;
-            IMidiOutput output;
+            IMidiInput input = null;
+            IMidiOutput output = null;
 
             string chosenIdIn = "";
             string chosenIdOut = "";
@@ -58,14 +55,26 @@ namespace MidiJunctionClient
 
             input = access.OpenInputAsync(chosenIdIn).Result;
 
-            foreach (IMidiPortDetails portdetails in access.Outputs)
+            if (access.Outputs.Count() > 0)
             {
-                Console.WriteLine($"Output: {portdetails.Name} / ID: {portdetails.Id}");
+                foreach (IMidiPortDetails portdetails in access.Outputs)
+                {
+                    Console.WriteLine($"Output: {portdetails.Name} / ID: {portdetails.Id}");
+                }
+                Console.WriteLine("Enter output device ID to use:");
+                chosenIdOut = Console.ReadLine();
             }
-            Console.WriteLine("Enter output device ID to use:");
-            chosenIdOut = Console.ReadLine();
 
-            output = access.OpenOutputAsync(chosenIdOut).Result;
+            try
+            {
+                output = access.OpenOutputAsync(chosenIdOut).Result;
+
+            }
+            catch
+            {
+                //
+                Console.WriteLine("Couldn't open output device, ignoring...");
+            }
 
             Console.WriteLine("Reading events...");
             input.MessageReceived += (object sender, MidiReceivedEventArgs e)
@@ -79,8 +88,11 @@ namespace MidiJunctionClient
                 }
                 outputs[4] = e.Timestamp.ToString();
                 TransmitMessage($"{outputs[0]},{outputs[1]},{outputs[2]},{outputs[3]},{outputs[4]},", stream);
-
-                output.Send(e.Data, 0, e.Data.Length, e.Timestamp);
+                Console.WriteLine($"{outputs[0]},{outputs[1]},{outputs[2]},{outputs[3]},{outputs[4]}");
+                if (output != null)
+                {
+                    output.Send(e.Data, 0, e.Data.Length, e.Timestamp);
+                }
             };
 
 
