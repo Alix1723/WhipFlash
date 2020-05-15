@@ -10,7 +10,7 @@ Contains:
 
 # Example with CH
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/pHzCSnUrR5Q" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+https://www.youtube.com/watch?v=pHzCSnUrR5Q
 
 The setup I use at the moment is:
 
