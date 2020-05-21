@@ -3,13 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LightFxServer", "LightFxServer\LightFxServer.csproj", "{0783B0A5-E447-4E44-9628-74F42ED9DB70}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WhipFlash", "LightFxServer\WhipFlash.csproj", "{0783B0A5-E447-4E44-9628-74F42ED9DB70}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PixelReaderClient", "PixelReaderClient\PixelReaderClient.csproj", "{78EB5A16-AC52-47C4-839E-1DD047F304ED}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RgbLightStripTester", "RgbLightStripTester\RgbLightStripTester.csproj", "{E97B6C52-432A-4058-B2ED-BC09C22CC233}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MidiJunctionClient", "MidiJunctionClient\MidiJunctionClient.csproj", "{7C318444-B38E-4772-B6FF-D772865D821C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloneHeroReaderClient", "CloneHeroReaderClient\CloneHeroReaderClient.csproj", "{7518889B-4D94-4AB5-AC02-A19F4D7CB12F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhipFlashConfig", "WhipFlashConfig\WhipFlashConfig.csproj", "{CCE9B7FF-B917-4FC3-8CEA-DEE4C5490C04}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +37,14 @@ Global
 		{7C318444-B38E-4772-B6FF-D772865D821C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C318444-B38E-4772-B6FF-D772865D821C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C318444-B38E-4772-B6FF-D772865D821C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7518889B-4D94-4AB5-AC02-A19F4D7CB12F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7518889B-4D94-4AB5-AC02-A19F4D7CB12F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7518889B-4D94-4AB5-AC02-A19F4D7CB12F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7518889B-4D94-4AB5-AC02-A19F4D7CB12F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCE9B7FF-B917-4FC3-8CEA-DEE4C5490C04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCE9B7FF-B917-4FC3-8CEA-DEE4C5490C04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCE9B7FF-B917-4FC3-8CEA-DEE4C5490C04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCE9B7FF-B917-4FC3-8CEA-DEE4C5490C04}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,6 +1,5 @@
 ﻿using Commons.Music.Midi;
 using System;
-using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 
@@ -8,6 +7,7 @@ namespace MidiJunctionClient
 {
     class Program
     {
+        //A client to read MIDI inputs, send them to a light server, and (optionally) forwards them to an output MIDI device
         static void Main(string[] args)
         {
             Console.WriteLine("MIDI Message splitter client");
@@ -68,11 +68,9 @@ namespace MidiJunctionClient
             try
             {
                 output = access.OpenOutputAsync(chosenIdOut).Result;
-
             }
             catch
             {
-                //
                 Console.WriteLine("Couldn't open output device, ignoring...");
             }
 
@@ -94,7 +92,6 @@ namespace MidiJunctionClient
                     output.Send(e.Data, 0, e.Data.Length, e.Timestamp);
                 }
             };
-
 
             Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
