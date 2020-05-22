@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Threading.Tasks;
-using LightFxServer;
+using WhipFlashServer;
 
 namespace RgbLightStripTester
 {

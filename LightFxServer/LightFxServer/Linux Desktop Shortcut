@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Open WhipFlash
+Comment=Launches WhipFlash with a config file
+Exec=/PATH_TO_EXECUTABLE/WhipFlash 192.168.1.23 5005 /PATH_TO_CONFIG_FILE/nameofconfig.xml
+Icon=/PATH_TO_ICON.png
+Terminal=true
+Type=Application

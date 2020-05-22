@@ -15,7 +15,7 @@ namespace PixelReaderClient
         //if it breaks it's probably because CH updated
         static Point monitorOffset = new Point(0, 0); //deal with multi     
         static int updatesPerSecond = 60;
-        static bool isFourLaneHighway = false; //drums = true, guitar/anything else = false
+        static bool isFourLaneHighway = true; //drums = true, guitar/anything else = false
 
         static void Main(string[] args)
         {

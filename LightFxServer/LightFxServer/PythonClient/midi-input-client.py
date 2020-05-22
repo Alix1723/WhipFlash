@@ -2,6 +2,10 @@ import sys, pygame, pygame.midi, socket
 pygame.init()
 pygame.midi.init()
 
+#Remixed from https://wiki.python.org/moin/TcpCommunication and other pygame midi examples
+
+#args: deviceID, IP, port
+
 inputSelection = -1
 
 TCP_IP = '127.0.0.1'
@@ -20,12 +24,12 @@ s.connect((TCP_IP, TCP_PORT))
 print("Successfully connected to ", TCP_IP, TCP_PORT) 
 
 if(inputSelection == -1):
-	for x in range(0, pygame.midi.get_count()):
+    for x in range(0, pygame.midi.get_count()):
 	    print("Device", x,pygame.midi.get_device_info(x))
- 
-	inputSelection = int(input())
+        
+    inputSelection = int(input())
 
-inp = pygame.midi.Input(inputSelection) #Todo: configurable
+inp = pygame.midi.Input(inputSelection)
 print("reading device #, #",inputSelection,pygame.midi.get_device_info(inputSelection))
 
 while True:
@@ -37,9 +41,6 @@ while True:
             message = "{},{},{},{},{},".format(m_e[0][0], m_e[0][1], m_e[0][2], m_e[0][3], m_e[1])
             print(message)
             s.send(message.encode('ascii'))
-
-    # wait 10ms - this is arbitrary, but wait(0) still resulted
-    # in 100% cpu utilization
     pygame.time.wait(10)
 
 s.close()

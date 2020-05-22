@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Drawing;
 using System.IO;
 
-namespace LightFxServer
+namespace WhipFlashServer
 {
     class Program
     {

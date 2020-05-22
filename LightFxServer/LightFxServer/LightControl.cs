@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using System.Transactions;
 
-namespace LightFxServer
+namespace WhipFlashServer
 {
     public class LightControl
     {

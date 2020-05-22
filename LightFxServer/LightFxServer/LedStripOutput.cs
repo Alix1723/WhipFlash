@@ -2,7 +2,7 @@
 using System.Device.Spi;
 using Iot.Device.Graphics;
 
-namespace LightFxServer
+namespace WhipFlashServer
 {
     class LedStripOutput
     {

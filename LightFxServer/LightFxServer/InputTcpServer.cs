@@ -5,7 +5,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace LightFxServer
+namespace WhipFlashServer
 {
 
     //Multi-threaded server paraphrased from

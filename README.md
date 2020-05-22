@@ -19,3 +19,11 @@ Python Script to read MIDI inputs and send them to the FX server via TCP;
 FX server that takes in messages, figures out if they're triggering a note, and makes the assigned strip of LEDs flash their specific colour(s).
 
 There's also a small program reading the colour of a few pixels from the game to track whether Star Power is active or not, and when these events happen it sends a 'special event' message to the server to toggle the blue star power effect on or off. 
+
+# Current ToDo list:
+- GUI-based config editor
+- editor also launches/sends messages to server
+- Selectable FX per channel (fade, constant, patterns etc)
+- Make patterns arbitrary and configurable (e.g. SP)
+- Make performances switchable with a special message
+- Elegantly connect and disconnect clients

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Xml.Serialization;
 
-namespace LightFxServer
+namespace WhipFlashServer
 {
     [Serializable]
     public class LightChannel
