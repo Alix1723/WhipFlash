@@ -74,10 +74,10 @@ namespace PixelReaderClient
                 { "3 8x", c_MultiplierColourEight },
                 { "4 Star Power", c_StarPowerColour } };
 
-            int darkThreshold = 2;
+            //int darkThreshold = 2;
             int highwayThreshold = 600;
             bool isPlaying;
-            int LastCombo = 0;
+            //int LastCombo = 0;
             Color LastColor = Color.Empty;
             int colourChangeDelta = 2500;
 

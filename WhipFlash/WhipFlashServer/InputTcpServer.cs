@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace WhipFlashServer
 {
@@ -61,6 +62,14 @@ namespace WhipFlashServer
                 {
                     string hex = BitConverter.ToString(bytes);
                     data = Encoding.ASCII.GetString(bytes, 0, i);
+
+                    if (data == "disconnect") 
+                    {
+                        //Gracefully disconnect
+                        Console.WriteLine($"Client @ {client.Client.RemoteEndPoint} Disconnected");
+                        stream.Close();
+                        client.Close();                   
+                    }
                     try
                     {
                         //Handle potentially multiple events in one message
@@ -87,6 +96,11 @@ namespace WhipFlashServer
                     //Byte[] reply = Encoding.ASCII.GetBytes(data.Length.ToString());
                     //stream.Write(reply, 0, reply.Length);
                 }
+            }
+            catch (IOException) //se
+            {
+                Console.WriteLine("--Client dropped");
+                client.Close();
             }
             catch (Exception e)
             {
