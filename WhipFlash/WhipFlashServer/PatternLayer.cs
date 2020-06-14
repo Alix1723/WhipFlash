@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Xml.Serialization;
 using WhipFlashServer;
@@ -32,7 +33,10 @@ namespace WhipFlash
 
         public int GetCurrentIndex()
         {
-            return (int)(Math.Floor((DateTime.UtcNow.Ticks/10000000)*PatternSpeed)) % PatternColours.Length;
+            //todo: calculate this only once every frame to save some cpu
+            var elapsed = (DateTime.UtcNow - Process.GetCurrentProcess().StartTime.ToUniversalTime()).TotalMilliseconds;
+
+            return (int)(Math.Floor((elapsed/1000f) * PatternSpeed)) % PatternColours.Length; //todo: get rid of ints, interpolate colours in patterns
         }
         //public 
     }

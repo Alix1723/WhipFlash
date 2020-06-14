@@ -9,7 +9,7 @@ namespace WhipFlashServer
     {
         public static ConcurrentQueue<MidiEvent> MidiMessageList = new ConcurrentQueue<MidiEvent>();
 
-        private static string configPath = Path.Combine(Directory.GetCurrentDirectory(), "config");
+        private static string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config");
 
         static void Main(string[] args)
         {

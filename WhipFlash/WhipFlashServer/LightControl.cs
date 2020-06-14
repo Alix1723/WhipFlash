@@ -176,6 +176,7 @@ namespace WhipFlashServer
                                 SetStackRange(currentChannel.GetStripRange(),
                                 currentPatternLayer.PatternColours,
                                 currentPatternLayer.GetCurrentIndex());
+                                Console.WriteLine($"Index: {currentPatternLayer.GetCurrentIndex()}");
                             }
 
                         }
