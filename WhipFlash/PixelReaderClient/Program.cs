@@ -82,8 +82,8 @@ namespace PixelReaderClient
             int colourChangeDelta = 2500;
 
             int SpecialEventType = 100;
-            int ComboChangeNote = 1;
-            int MultiplierChangeNote = 2;
+            //int ComboChangeNote = 1;
+            int PatternChangeNote = 1;
 
             try
             {
@@ -98,8 +98,8 @@ namespace PixelReaderClient
 
                         if (isPlaying)
                         {
-                            //Combo meter
-                            int Combo = 0;
+                            //Combo meter todo: rework this
+                            /*int Combo = 0;
                             foreach (Point p in ComboMeter)
                             {
                                 if (SumColor(GetColorOfPixel(p)) > darkThreshold)
@@ -112,7 +112,7 @@ namespace PixelReaderClient
                             {
                                 finalOutput += $"{SpecialEventType},{ComboChangeNote},{Combo},0,0,";
                                 LastCombo = Combo;
-                            }
+                            }*/
 
                             //Multiplier colour      
                             try
@@ -138,7 +138,7 @@ namespace PixelReaderClient
                                     }
 
                                     Console.WriteLine($"{closest.Key}");
-                                    finalOutput += $"{SpecialEventType},{MultiplierChangeNote},{closest.Key.Substring(0, 1)},0,0,";
+                                    finalOutput += $"{SpecialEventType},{PatternChangeNote},{(closest.Key.Substring(0, 1) == "4" ? 1 : 0)},0,0,";
                                 }
 
                                 LastColor = MultiplierColour;

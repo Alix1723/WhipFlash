@@ -9,7 +9,7 @@ namespace WhipFlashServer
         [XmlArray]
         public int[] ChannelTriggerNotes;             //The MIDI note(s) to listen for
         [XmlElement]
-        private float velocityModifier = 1.0f;                              //Multiplier from input vel to output brightness
+        public float velocityModifier = 1.0f;                              //Multiplier from input vel to output brightness
         [XmlElement]
         public int StripRangeStart;            //LED indexes to start and end on;
         [XmlElement]

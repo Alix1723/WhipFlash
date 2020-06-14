@@ -35,6 +35,14 @@ namespace WhipFlashServer
             this.Blue = b;
         }
 
+        public Colour(int r, int g, int b)
+        {
+            this.Alpha = 255;
+            this.Red = r;
+            this.Green = g;
+            this.Blue = b;
+        }
+
         public static Colour Blank()
         {
             return new Colour();

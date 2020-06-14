@@ -70,6 +70,8 @@ namespace WhipFlashServer
                 strip.SetStrip(Colour.Blank());
             }
 
+            currentPatternLayer = PatternLayers[0];
+
             var bgtask = Task.Run(UpdateValues);
         }
 
@@ -128,7 +130,6 @@ namespace WhipFlashServer
                 //Multiplier (and SP)
                 if (eventIn.NoteNumber == 1 ) //"Change pattern" event
                 {
-                    //currentComboColour = c_multiplierColours[eventIn.NoteVelocity];//Combo 
                     SetPatternLayer(eventIn.NoteVelocity);
                 }
                 //Combo meter
@@ -165,10 +166,10 @@ namespace WhipFlashServer
                         //Apply pattern layers
                         if (currentPatternLayer.PatternLayerType != PatternType.Default)
                         {
-
                             if (currentPatternLayer.LayerAppliesToWholeChannels)
                             {
-                                //todo
+                                SetStackRange(currentChannel.GetStripRange(),
+                                currentPatternLayer.PatternColours[channelIndex % currentPatternLayer.PatternColours.Length]);
                             }
                             else
                             {
@@ -186,8 +187,6 @@ namespace WhipFlashServer
                             {
                                 currentChannel.SetHitValue(-1f);
                             }
-
-                            //todo: SP and fast/flams are exclusive?
 
                             if (currentPatternLayer.LayerOverwritesHitColours)
                             {

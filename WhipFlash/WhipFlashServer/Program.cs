@@ -7,7 +7,9 @@ namespace WhipFlashServer
 {
     class Program
     {
-        public static ConcurrentQueue<MidiEvent> MidiMessageList = new ConcurrentQueue<MidiEvent>();        
+        public static ConcurrentQueue<MidiEvent> MidiMessageList = new ConcurrentQueue<MidiEvent>();
+
+        private static string configPath = Path.Combine(Directory.GetCurrentDirectory(), "config");
 
         static void Main(string[] args)
         {
@@ -25,23 +27,25 @@ namespace WhipFlashServer
                 {
                     if (args[0] != null) { targetAddress = args[0]; }
                     if (args[1] != null) { int.TryParse(args[1], out targetPort); }
-                    if (args[2] != null) { targetFilepath = args[2]; }
                 }
             }
-            //"./LightServer_Config.xml"
-            if(targetFilepath.Length==0)
+            
+            if(Directory.Exists(configPath))
             {
-                Console.WriteLine("No configuration file specified, trying default...");
-                if (File.Exists("./LightServer_Config.xml"))
+                foreach (string fname in Directory.GetFiles(configPath))
                 {
-                    Console.WriteLine("Using default path \"./ LightServer_Config.xml\"");
-                    targetFilepath = "./LightServer_Config.xml";
-                }
-                else
-                {
-                    throw new InvalidOperationException("No config available!");
+                    if(fname.EndsWith(".xml"))
+                    {
+                        //todo: multiple files, just load the first one for now
+                        targetFilepath = fname;
+                    }
                 }
             }
+            else
+                {
+                throw new InvalidOperationException("No config available!");
+            }
+
 
             LightControl control = new LightControl(isDebug: debug, inputConfig: LightsConfiguration.LoadConfigFromFile(targetFilepath));
 

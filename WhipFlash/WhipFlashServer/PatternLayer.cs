@@ -28,14 +28,11 @@ namespace WhipFlash
         public bool LayerAppliesToWholeChannels; //Use pattern colours as a channel's entire colour
 
         [XmlElement]
-        public int PatternSpeed; //Speed in (?)/sec
+        public float PatternSpeed; //Speed in (index)/sec
 
-
-        private int currentIndex;
-        
         public int GetCurrentIndex()
         {
-            return currentIndex;
+            return (int)(Math.Floor((DateTime.UtcNow.Ticks/10000000)*PatternSpeed)) % PatternColours.Length;
         }
         //public 
     }
@@ -47,7 +44,5 @@ namespace WhipFlash
         ScrollForward, //Loop forward
         ScrollBackward, // Loop backwards
         Cycle, //All lights cycle colours
-        Rainbow, //Rainbow!
-
     }
 }
