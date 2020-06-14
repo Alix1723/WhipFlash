@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MidiJunctionClient", "MidiJ
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloneHeroReaderClient", "CloneHeroReaderClient\CloneHeroReaderClient.csproj", "{7518889B-4D94-4AB5-AC02-A19F4D7CB12F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WhipFlashConfig", "WhipFlashConfig\WhipFlashConfig.csproj", "{CCE9B7FF-B917-4FC3-8CEA-DEE4C5490C04}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WhipFlash", "WhipFlashServer\WhipFlash.csproj", "{07E16F5C-B431-4367-B488-C97D02EBA816}"
 EndProject
 Global
@@ -37,10 +35,6 @@ Global
 		{7518889B-4D94-4AB5-AC02-A19F4D7CB12F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7518889B-4D94-4AB5-AC02-A19F4D7CB12F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7518889B-4D94-4AB5-AC02-A19F4D7CB12F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CCE9B7FF-B917-4FC3-8CEA-DEE4C5490C04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CCE9B7FF-B917-4FC3-8CEA-DEE4C5490C04}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CCE9B7FF-B917-4FC3-8CEA-DEE4C5490C04}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CCE9B7FF-B917-4FC3-8CEA-DEE4C5490C04}.Release|Any CPU.Build.0 = Release|Any CPU
 		{07E16F5C-B431-4367-B488-C97D02EBA816}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{07E16F5C-B431-4367-B488-C97D02EBA816}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{07E16F5C-B431-4367-B488-C97D02EBA816}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Linq;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Transactions;
+using WhipFlash;
 
 namespace WhipFlashServer
 {
@@ -11,14 +14,10 @@ namespace WhipFlashServer
 
         //Channels (MIDI note(s) and colour(s) to apply to a range of LEDs
         public LightChannel[] LightChannels;
+        public PatternLayer[] PatternLayers;
+        PatternLayer currentPatternLayer;
 
         //Options
-        bool BootAnimation;
-        bool StarPowerOverridesColours;
-        bool StarPowerBacklights;
-        bool StarPowerAnimates;
-        float StarPowerAnimSpeed; //In LED/s sec
-
         bool FastNotesDetection;
         int FastNoteTimeThreshold; //ms between notes to be considered 'fast'
         float FastNoteVelocityThreshold; //How hard to hit to be considered 'fast'
@@ -32,34 +31,18 @@ namespace WhipFlashServer
 
         //Vel (envelope) control
         float decayValue;
-        float offValueCap;
+        float offValueCap = 0.002f;
 
         float intensityDecayRate;
+        float intensityGain; 
 
         //Outputs
         Colour[] stripStack;
         LedStripOutput strip;
 
         //State information
-        bool isStarPowerOn = false;
-        Colour currentComboColour;
-        float starPowerAnimationCycle = 0; //quantises to int...
         bool debugmode;
         
-
-        //Mul colours
-        Colour[] c_multiplierColours =
-        {
-            new Colour(255, 255, 216, 50), //Yellow (0x combo)
-            new Colour(255, 255, 150, 0), //Orange
-            new Colour(255, 25, 255, 25), //Green
-            new Colour(255, 255, 50, 255), //Purple
-            new Colour(255, 50, 150, 255) //Light blue
-        };
-
-        Colour c_StarPowerBackgroundColour;
-        Colour c_StarPowerForegroundColour;
-        Colour[] c_StarPowerBackgroundColourPattern; 
         Colour c_IntensityColour;
 
         public LightControl(int striplength = 0, bool isDebug = false, LightsConfiguration inputConfig = null)
@@ -86,7 +69,6 @@ namespace WhipFlashServer
                 strip = new LedStripOutput(striplength);
                 strip.SetStrip(Colour.Blank());
             }
-            currentComboColour = c_multiplierColours[0];
 
             var bgtask = Task.Run(UpdateValues);
         }
@@ -94,7 +76,9 @@ namespace WhipFlashServer
         public void ProcessEvent(MidiEvent eventIn)
         {
             //Filter to note events
-            if (eventIn.EventType == (int)EventTypes.NoteOn || eventIn.EventType == (int)EventTypes.NoteOff || eventIn.EventType == (int)EventTypes.HitOn && eventIn.NoteVelocity > 0)
+            if (eventIn.EventType == (int)EventTypes.NoteOn 
+                || eventIn.EventType == (int)EventTypes.NoteOff 
+                || eventIn.EventType == (int)EventTypes.HitOn && eventIn.NoteVelocity > 0)
             {
                 //Filter to specific note nums#
                 foreach (LightChannel curChannel in LightChannels)
@@ -126,12 +110,10 @@ namespace WhipFlashServer
                                 {
                                     if (curChannel.HitValue > FastNoteVelocityThreshold)
                                     {
-
-                                        curChannel.SetIntensity(Math.Min(curChannel.ChannelIntensity + (curChannel.HitValue * 0.15f), 1));
+                                        curChannel.SetIntensity(Math.Min(curChannel.ChannelIntensity + (curChannel.HitValue * 0.15f), 1)); //todo: configurable
                                     }
                                 }
                             }
-
                             break;
                         }
                     }
@@ -144,23 +126,24 @@ namespace WhipFlashServer
                 Console.WriteLine($"Got a {eventIn.NoteNumber} event, {eventIn.NoteVelocity} value");
 
                 //Multiplier (and SP)
-                if (eventIn.NoteNumber == 2)
+                if (eventIn.NoteNumber == 1 ) //"Change pattern" event
                 {
-                    currentComboColour = c_multiplierColours[eventIn.NoteVelocity];//Combo 
-                    SetStarPower(eventIn.NoteVelocity == 4);
+                    //currentComboColour = c_multiplierColours[eventIn.NoteVelocity];//Combo 
+                    SetPatternLayer(eventIn.NoteVelocity);
                 }
                 //Combo meter
-                if (eventIn.NoteNumber == 1)
+                /*if (eventIn.NoteNumber == 1)
                 {
                     var comboMeter = eventIn.NoteVelocity;
-                }
+                }*/
+
+                    //todo: fancy stuff like combo meters in the future
             }
         }        
 
         //Main refresh loop
         public async Task UpdateValues()
         {
-            float bootAnimationIndex = 0f; //0-1
             try
             {
                 Console.WriteLine("Started refreshing...");
@@ -175,22 +158,25 @@ namespace WhipFlashServer
 
                     ClearStack();
 
-                    foreach (LightChannel currentChannel in LightChannels)
+                    for (int channelIndex = 0; channelIndex < LightChannels.Length; channelIndex++)
                     {
-                        if (StarPowerBacklights)
+                        LightChannel currentChannel = LightChannels[channelIndex];
+
+                        //Apply pattern layers
+                        if (currentPatternLayer.PatternLayerType != PatternType.Default)
                         {
-                            if (isStarPowerOn)
+
+                            if (currentPatternLayer.LayerAppliesToWholeChannels)
                             {
-                                if (StarPowerAnimates)
-                                {
-                                    SetStackRange(currentChannel.GetStripRange(), c_StarPowerBackgroundColourPattern, (int)starPowerAnimationCycle);
-                                    starPowerAnimationCycle = (starPowerAnimationCycle + ((1.0f / (float)updatesPerSecond) * (StarPowerAnimSpeed))) % c_StarPowerBackgroundColourPattern.Length; //Todo use time-based
-                                }
-                                else
-                                {
-                                    SetStackRange(currentChannel.GetStripRange(), c_StarPowerBackgroundColour);
-                                }
+                                //todo
                             }
+                            else
+                            {
+                                SetStackRange(currentChannel.GetStripRange(),
+                                currentPatternLayer.PatternColours,
+                                currentPatternLayer.GetCurrentIndex());
+                            }
+
                         }
 
                         //Hit colours
@@ -202,18 +188,26 @@ namespace WhipFlashServer
                             }
 
                             //todo: SP and fast/flams are exclusive?
-                            OverlayStackRange(currentChannel.GetStripRange(),
-                                (StarPowerOverridesColours && isStarPowerOn) ?
-                                    Colour.MultiplyColours(c_StarPowerForegroundColour, currentChannel.HitValue)
-                                :
-                                (FlamNotesDetection | FastNotesDetection) ?
-                                    Colour.MultiplyColours(Colour.CrossfadeColours(currentChannel.GetCurrentHitColour(), c_IntensityColour, currentChannel.ChannelIntensity), currentChannel.HitValue)
-                                :
-                                    Colour.MultiplyColours(currentChannel.GetCurrentHitColour(), currentChannel.HitValue)) ;
 
+                            if (currentPatternLayer.LayerOverwritesHitColours)
+                            {
+                                OverlayStackRange(currentChannel.GetStripRange(),
+                                    Colour.MultiplyColours(currentPatternLayer.OverwriteColour, currentChannel.HitValue));
+                            }
+                            else
+                            {
+                                //todo: overwrite and flams are still exclusive
+                                OverlayStackRange(currentChannel.GetStripRange(),
+                                    Colour.MultiplyColours(
+                                        Colour.CrossfadeColours(
+                                            currentChannel.GetCurrentHitColour(),
+                                            c_IntensityColour,
+                                            currentChannel.ChannelIntensity),
+                                        currentChannel.HitValue));
+                            }
+    
                             //Envelope control happens here
                             if (!KeysMode) { currentChannel.DecayHitValue(decayValue); } 
-                            //todo: allow this and just have a 0 decay to sustain brightness?
                         }
 
                         if (currentChannel.ChannelIntensity > 0)
@@ -225,28 +219,9 @@ namespace WhipFlashServer
                         if (debugmode)
                         {
                             //Console.WriteLine(lightChannel.ToString());
-                        }
-
-                        if(BootAnimation & bootAnimationIndex >= 0)
-                        {
-                            int rangedifference = currentChannel.StripRangeEnd - currentChannel.StripRangeStart;
-                            int specific = (int)(currentChannel.StripRangeStart + (bootAnimationIndex * 2 * (currentChannel.StripRangeEnd - currentChannel.StripRangeStart) % rangedifference));
-                            SetStackRange(Tuple.Create(specific, specific), Colour.CrossfadeColours(currentChannel.GetCurrentHitColour(), Colour.Blank(), 0.9f));
-                        }
+                        }                      
                     }
-
-                    if (BootAnimation)
-                    {
-                        if (bootAnimationIndex >= 0f)
-                        {
-                            bootAnimationIndex += (2.0f / updatesPerSecond);
-                            if(bootAnimationIndex >= 1.0f)
-                            {
-                                bootAnimationIndex = -1f;
-                            }
-                        }
-                    }
-
+                   
                     //Refresh strip
                     if (!debugmode)
                     {
@@ -324,14 +299,22 @@ namespace WhipFlashServer
             strip.SetStrip(stripStack);
         }
 
-        public void SetStarPower(bool enabled)
+        public void SetPatternLayer(int patternIndex)
         {
-            isStarPowerOn = enabled;
+            try
+            {
+                currentPatternLayer = PatternLayers[patternIndex];
+            }
+            catch(ArgumentOutOfRangeException)
+            {
+                Console.Write("Pattern Layer {} unavailable, resetting to 0...");
+                currentPatternLayer = PatternLayers[0];
+            }
         }
 
         public void LoadParameters(string filepath)
         {
-
+            throw new NotImplementedException();
 
         }
 
@@ -342,11 +325,6 @@ namespace WhipFlashServer
 
             outLc.KeysMode = KeysMode;
             outLc.UpdatesPerSecond = updatesPerSecond;
-            outLc.BootAnimation = BootAnimation;
-            outLc.StarPowerAnimates = StarPowerAnimates;
-            outLc.StarPowerBacklights = StarPowerBacklights;
-            outLc.StarPowerOverridesColours = StarPowerOverridesColours;
-            outLc.StarPowerAnimSpeed = StarPowerAnimSpeed;
             outLc.DefinedChannels = LightChannels;
             outLc.FastNotesDetection = FastNotesDetection;
             outLc.FastNotesTimeThreshold = FastNoteTimeThreshold;
@@ -355,12 +333,10 @@ namespace WhipFlashServer
             outLc.FlamNotesTimeThreshold = FlamNotesTimeThreshold;
             outLc.FlamNotesVelocityThreshold = FlamNotesVelocityThreshold;
             outLc.HitDecayRate = decayValue;
-            outLc.HitMinimumCap = offValueCap;
             outLc.IntensityDecayRate = intensityDecayRate;
-            outLc.ColourStarPowerForeground = c_StarPowerForegroundColour;
-            outLc.ColourStarPowerBackground = c_StarPowerBackgroundColour;
+            outLc.IntensityGain = intensityGain;
             outLc.ColourIntensityHighlight = c_IntensityColour;
-            outLc.ColoursStarPowerPattern = c_StarPowerBackgroundColourPattern;
+            outLc.DefinedPatternLayers = PatternLayers;
 
             return outLc;
         }
@@ -369,12 +345,8 @@ namespace WhipFlashServer
         {
             this.KeysMode = conf.KeysMode;
             this.updatesPerSecond = conf.UpdatesPerSecond;
-            this.BootAnimation = conf.BootAnimation;
-            this.StarPowerAnimates = conf.StarPowerAnimates;
-            this.StarPowerBacklights = conf.StarPowerBacklights;
-            this.StarPowerOverridesColours = conf.StarPowerOverridesColours;
-            this.StarPowerAnimSpeed = conf.StarPowerAnimSpeed;
             this.LightChannels = conf.DefinedChannels;
+            this.PatternLayers = conf.DefinedPatternLayers;
             this.FastNotesDetection = conf.FastNotesDetection;
             this.FastNoteTimeThreshold = conf.FastNotesTimeThreshold;
             this.FastNoteVelocityThreshold = conf.FastNotesVelocityThreshold;
@@ -382,12 +354,10 @@ namespace WhipFlashServer
             this.FlamNotesTimeThreshold = conf.FlamNotesTimeThreshold;
             this.FlamNotesVelocityThreshold = conf.FlamNotesVelocityThreshold;
             this.decayValue = conf.HitDecayRate;
-            this.offValueCap = conf.HitMinimumCap;
             this.intensityDecayRate = conf.IntensityDecayRate;
-            this.c_StarPowerForegroundColour = conf.ColourStarPowerForeground;
-            this.c_StarPowerBackgroundColour = conf.ColourStarPowerBackground;
             this.c_IntensityColour = conf.ColourIntensityHighlight;
-            this.c_StarPowerBackgroundColourPattern = conf.ColoursStarPowerPattern;
+
+            this.intensityGain = conf.IntensityGain;
             Console.WriteLine("Set lights config");
         }
 

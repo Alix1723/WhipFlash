@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Xml.Serialization;
+using WhipFlash;
 
 namespace WhipFlashServer
 {
@@ -11,19 +12,7 @@ namespace WhipFlashServer
     public class LightsConfiguration
     {
         [XmlElement]
-        public bool BootAnimation;
-
-        [XmlElement]
         public bool KeysMode;
-
-        [XmlElement]
-        public bool StarPowerOverridesColours;
-        [XmlElement]
-        public bool StarPowerBacklights;
-        [XmlElement]
-        public bool StarPowerAnimates;
-        [XmlElement]
-        public float StarPowerAnimSpeed;
 
         [XmlElement]
         public bool FastNotesDetection;
@@ -40,32 +29,27 @@ namespace WhipFlashServer
         public float FlamNotesVelocityThreshold; //How hard to hit to flam (and not e.g. ghost)
 
         [XmlElement]
-        public int UpdatesPerSecond;
+        public Colour ColourIntensityHighlight;
 
         [XmlElement]
-        public float HitDecayRate;
-
-        [XmlElement]
-        public float HitMinimumCap;
+        public float IntensityGain;
 
         [XmlElement]
         public float IntensityDecayRate;
 
         [XmlElement]
-        public Colour ColourStarPowerBackground;
+        public int UpdatesPerSecond;
+
 
         [XmlElement]
-        public Colour ColourStarPowerForeground;
-
-        [XmlArray]
-        public Colour[] ColoursStarPowerPattern;
-
-        [XmlElement]
-        public Colour ColourIntensityHighlight;
-
+        public float HitDecayRate;
+        
         [XmlArray]
         public LightChannel[] DefinedChannels;
 
+        [XmlArray]
+
+        public PatternLayer[] DefinedPatternLayers;
 
         static LightsConfiguration() { }
 

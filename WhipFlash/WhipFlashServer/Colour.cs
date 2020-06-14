@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.Schema;
 using System.Xml.Serialization;
 
 namespace WhipFlashServer
 {
     [Serializable]
-    public class Colour
+    public class Colour : IXmlSerializable
     {
         [XmlElement]
         public int Alpha;
@@ -77,6 +80,35 @@ namespace WhipFlashServer
                 (int)(inputA.Red + ((inputB.Red - inputA.Red) * factor)),
                 (int)(inputA.Green + ((inputB.Green - inputA.Green) * factor)),
                 (int)(inputA.Blue + ((inputB.Blue - inputA.Blue) * factor)));
+        }
+
+        public XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        //https://stackoverflow.com/questions/22098564/implementing-custom-xml-serialization-deserialization-of-compound-data-type
+        public void ReadXml(XmlReader reader)
+        {
+            reader.MoveToContent();
+
+            Boolean isEmptyElement = reader.IsEmptyElement; 
+            reader.ReadStartElement();
+            if (!isEmptyElement) 
+            {
+                var valuesString = reader.ReadContentAsString();
+                string[] values = valuesString.Split(',');
+                this.Alpha = int.Parse(values[0]);
+                this.Red = int.Parse(values[1]);
+                this.Green = int.Parse(values[2]);
+                this.Blue = int.Parse(values[3]);
+                reader.ReadEndElement();
+            }
+        }
+
+        public void WriteXml(XmlWriter writer)
+        {
+            writer.WriteString($"{this.Alpha},{this.Red},{this.Green},{this.Blue}");
         }
 
         //Auto-convert to 'Color'
