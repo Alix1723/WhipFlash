@@ -31,14 +31,34 @@ namespace WhipFlash
         [XmlElement]
         public float PatternSpeed; //Speed in (index)/sec
 
-        public int GetCurrentIndex()
-        {
-            //todo: calculate this only once every frame to save some cpu
-            var elapsed = (DateTime.UtcNow - Process.GetCurrentProcess().StartTime.ToUniversalTime()).TotalMilliseconds;
 
-            return (int)(Math.Floor((elapsed/1000f) * PatternSpeed)) % PatternColours.Length; //todo: get rid of ints, interpolate colours in patterns
+        private double elapsedTime;
+
+        public int GetCurrentIndex()
+        {           
+            if(PatternLayerType == PatternType.ScrollBackward)
+            {
+                return PatternColours.Length - (int)(Math.Floor((elapsedTime / 1000f) * PatternSpeed)) % PatternColours.Length; //todo: get rid of ints, interpolate colours in patterns
+            }
+
+            return (int)(Math.Floor((elapsedTime / 1000f) * PatternSpeed)) % PatternColours.Length; //todo: get rid of ints, interpolate colours in patterns
         }
-        //public 
+
+        public float GetCurrentIndexFloat()
+        {
+            if (PatternLayerType == PatternType.ScrollBackward)
+            {
+                return PatternColours.Length - (((float)elapsedTime / 1000f) * PatternSpeed) % PatternColours.Length; 
+            }
+
+            return (((float)elapsedTime / 1000f) * PatternSpeed) % PatternColours.Length; 
+        }
+        public void UpdateElapsedTime()
+        {
+            //Only call once per frame
+            elapsedTime = (DateTime.UtcNow - Process.GetCurrentProcess().StartTime.ToUniversalTime()).TotalMilliseconds;
+        }
+
     }
 
     [Serializable]

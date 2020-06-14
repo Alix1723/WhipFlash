@@ -91,7 +91,7 @@ namespace WhipFlashServer
         {
             return Tuple.Create(StripRangeStart, StripRangeEnd);
         }
-
+            
         public Colour GetCurrentHitColour()
         {
             return HitColours[LastNoteColourIndex];

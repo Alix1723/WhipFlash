@@ -158,6 +158,7 @@ namespace WhipFlashServer
                     }
 
                     ClearStack();
+                    currentPatternLayer.UpdateElapsedTime();
 
                     for (int channelIndex = 0; channelIndex < LightChannels.Length; channelIndex++)
                     {
@@ -173,10 +174,18 @@ namespace WhipFlashServer
                             }
                             else
                             {
-                                SetStackRange(currentChannel.GetStripRange(),
-                                currentPatternLayer.PatternColours,
-                                currentPatternLayer.GetCurrentIndex());
-                                Console.WriteLine($"Index: {currentPatternLayer.GetCurrentIndex()}");
+                                if (currentPatternLayer.PatternLayerType == PatternType.Cycle)
+                                {
+                                    SetStackRangeInterpolatedMono(currentChannel.GetStripRange(),
+                                    currentPatternLayer.PatternColours,
+                                    currentPatternLayer.GetCurrentIndexFloat());
+                                }
+                                else
+                                {
+                                    SetStackRangeInterpolated(currentChannel.GetStripRange(),
+                                    currentPatternLayer.PatternColours,
+                                    currentPatternLayer.GetCurrentIndexFloat());
+                                }
                             }
 
                         }
@@ -203,6 +212,7 @@ namespace WhipFlashServer
                                             currentChannel.GetCurrentHitColour(),
                                             c_IntensityColour,
                                             currentChannel.ChannelIntensity),
+
                                         currentChannel.HitValue));
                             }
     
@@ -253,6 +263,30 @@ namespace WhipFlashServer
             for (int k = targetRange.Item1; k <= targetRange.Item2; k++)
             {
                 stripStack[k] = colourInputs[(k + offset) % colourInputs.Length];
+            }
+        }
+
+        public void SetStackRangeInterpolated(Tuple<int, int> targetRange, Colour[] colourInputs, float offset)
+        {
+            for (int k = targetRange.Item1; k <= targetRange.Item2; k++)
+            {
+                int before = ((int)Math.Floor(offset)+k) % colourInputs.Length;
+                int after = ((int)Math.Ceiling(offset)+k) % colourInputs.Length;
+                var interpolated = Colour.CrossfadeColours(colourInputs[before], colourInputs[after], (offset % 1));
+
+                stripStack[k] = interpolated;
+            }
+        }
+
+        public void SetStackRangeInterpolatedMono(Tuple<int, int> targetRange, Colour[] colourInputs, float offset)
+        {
+            for (int k = targetRange.Item1; k <= targetRange.Item2; k++)
+            {
+                int before = ((int)Math.Floor(offset)) % colourInputs.Length;
+                int after = ((int)Math.Ceiling(offset)) % colourInputs.Length;
+                var interpolated = Colour.CrossfadeColours(colourInputs[before], colourInputs[after], (offset % 1));
+
+                stripStack[k] = interpolated;
             }
         }
 

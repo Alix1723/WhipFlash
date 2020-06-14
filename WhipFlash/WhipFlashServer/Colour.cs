@@ -83,11 +83,20 @@ namespace WhipFlashServer
 
         public static Colour CrossfadeColours(Colour inputA, Colour inputB, float factor)
         {
-            return new Colour(
-                (int)(inputA.Alpha + ((inputB.Alpha- inputA.Alpha)*factor)),
+            var output = new Colour(
+                (int)(inputA.Alpha + ((inputB.Alpha - inputA.Alpha) * factor)),
                 (int)(inputA.Red + ((inputB.Red - inputA.Red) * factor)),
                 (int)(inputA.Green + ((inputB.Green - inputA.Green) * factor)),
                 (int)(inputA.Blue + ((inputB.Blue - inputA.Blue) * factor)));
+
+            if (output.Alpha < 0) { throw new InvalidOperationException($"Alpha negative? a{inputA} b{inputB} f {factor}"); }
+
+            if (output.Red < 0) { throw new InvalidOperationException($"Red negative? a{inputA} b{inputB} f {factor}"); }
+            if (output.Green < 0) { throw new InvalidOperationException($"Green negative? a{inputA} b{inputB} f {factor}"); }
+            if (output.Blue < 0) { throw new InvalidOperationException($"Blue negative? a{inputA} b{inputB} f {factor}"); }
+
+
+            return output;
         }
 
         public XmlSchema GetSchema()
@@ -123,6 +132,10 @@ namespace WhipFlashServer
         public static implicit operator System.Drawing.Color(Colour x)
         {
             return System.Drawing.Color.FromArgb(x.Alpha, x.Red, x.Green, x.Blue);
+        }
+        public override string ToString()
+        {
+            return $"{Alpha},{Red},{Green},{Blue}";
         }
     }
 }
