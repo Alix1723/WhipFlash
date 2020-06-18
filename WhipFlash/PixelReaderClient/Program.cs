@@ -14,7 +14,8 @@ namespace PixelReaderClient
         //NB: This is specifically for Clone Hero PTB v0.24.0.1555-master
         //if it breaks it's probably because CH updated
         static Point monitorOffset = new Point(0, 0); //deal with multi     
-        static int updatesPerSecond = 60;
+        static Size frameSize = new Size(1920, 1080);
+        static int updatesPerSecond = 30;
         static bool isFourLaneHighway = true; //drums = true, guitar/anything else = false
 
         static void Main(string[] args)
@@ -74,9 +75,10 @@ namespace PixelReaderClient
                 { "3 8x", c_MultiplierColourEight },
                 { "4 Star Power", c_StarPowerColour } };
 
+            string lastMultiplier = "0";
             //int darkThreshold = 2;
             int highwayThreshold = 600;
-            bool isPlaying;
+            bool isPlaying = false;
             //int LastCombo = 0;
             Color LastColor = Color.Empty;
             int colourChangeDelta = 2500;
@@ -89,12 +91,33 @@ namespace PixelReaderClient
             {
                 while (true)
                 {
+                    
+
                     string finalOutput = "";
                     if (GetActiveWindowTitle() == "Clone Hero")
                     {
                         //Reading Pixels...
-                        isPlaying = (SumColor(GetColorOfPixel(isFourLaneHighway ? p_HighwayLeft_Drums : p_HighwayLeft_Guitar)) > highwayThreshold &&
-                            SumColor(GetColorOfPixel(isFourLaneHighway ? p_HighwayRight_Drums : p_HighwayRight_Guitar)) > highwayThreshold);
+                        RefreshScreenCapture();
+
+                        //Check play state
+                        if (SumColor(GetColorOfPixel(isFourLaneHighway ? p_HighwayLeft_Drums : p_HighwayLeft_Guitar)) > highwayThreshold &&
+                            SumColor(GetColorOfPixel(isFourLaneHighway ? p_HighwayRight_Drums : p_HighwayRight_Guitar)) > highwayThreshold)
+                        {
+                            if (!isPlaying) { 
+                                isPlaying = true;
+                                TransmitMessage($"{SpecialEventType},{PatternChangeNote},{(lastMultiplier == "4" ? 1 : 0)},0,0,",stream); //Set to blank (or SP if it's active)                             
+                            }
+
+                        }
+                        else
+                        {
+                            if (isPlaying)
+                            {
+                                isPlaying = false;
+                                TransmitMessage($"{SpecialEventType},{PatternChangeNote},{(lastMultiplier == "4" ? 0 : 2)},0,0,", stream); //Set to idle                           
+                            }
+                        }
+
 
                         if (isPlaying)
                         {
@@ -171,29 +194,18 @@ namespace PixelReaderClient
             }
         }
 
-        static Bitmap bitmap_SinglePixel = new Bitmap(1, 1);
-        static Graphics g_Graphics = Graphics.FromImage(bitmap_SinglePixel);
+        static Bitmap bitmap_frame = new Bitmap(frameSize.Width, frameSize.Height);
+        static Graphics g_Graphics = Graphics.FromImage(bitmap_frame);
 
-        static Color GetColorOfPixel(Point location)
+        static void RefreshScreenCapture()
         {
-            //Todo: optimise and snip multiple screen parts into one bitmap!
-
-            Rectangle bounds = new Rectangle(location.X + monitorOffset.X, location.Y + monitorOffset.Y, 1, 1);
-
-
-            g_Graphics.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size);
-
-                //g.ReleaseHdc();
-                /*
-                    * Todo:
-                    * GDCs leaking!
-                    * */
-            return bitmap_SinglePixel.GetPixel(0, 0);
-            
+            g_Graphics.CopyFromScreen(Point.Empty, Point.Empty, new Size(1920,1080));
         }
 
-        static Bitmap bitmap_MultiPixel = new Bitmap(2, 2); //temp
-        static Graphics g_Graphics_Multiple = Graphics.FromImage(bitmap_MultiPixel);
+        static Color GetColorOfPixel(Point location)
+        {           
+            return bitmap_frame.GetPixel(location.X,location.Y);          
+        }
 
         static List<Color> GetColorOfManyPixels(Point startlocation, Point endlocation)
         {
@@ -202,36 +214,33 @@ namespace PixelReaderClient
                 (endlocation.X - startlocation.X),
                 (endlocation.Y - startlocation.Y));
 
-            List<Color> output = new List<Color>();
-
-            g_Graphics_Multiple.CopyFromScreen(space.Location, Point.Empty, space.Size);
+            List<Color> output = new List<Color>();  
 
             for (int h = 0; h < space.Height; h++)
             {
                 for (int w = 0; w < space.Width; w++)
                 {
-                    output.Add(bitmap_MultiPixel.GetPixel(w, h));
+                    output.Add(bitmap_frame.GetPixel(w, h));
                 }
             }
                   
-
             return output;           
         }
         static Color GetAverage(List<Color> inputs)
         {            
-            var a = 0; //necessary?
+            //var a = 0; //Skip A for a little optimisation
             var r = 0;
             var g = 0;
             var b = 0;
 
             foreach (Color sample in inputs)
             {
-                a += (sample.A * sample.A);
+                //a += (sample.A * sample.A);
                 r += (sample.R * sample.R);
                 g += (sample.G * sample.G);
                 b += (sample.B * sample.B);
             }
-            return Color.FromArgb((int)Math.Sqrt(a / inputs.Count), 
+            return Color.FromArgb(255,//(int)Math.Sqrt(a / inputs.Count), 
                 (int)Math.Sqrt(r / inputs.Count), 
                 (int)Math.Sqrt(g / inputs.Count), 
                 (int)Math.Sqrt(b / inputs.Count));
