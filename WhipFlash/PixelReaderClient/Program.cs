@@ -35,8 +35,8 @@ namespace PixelReaderClient
             Console.WriteLine("Reading for pixels from Clone Hero...");
             Point p_HighwayLeft_Drums = new Point(538, 1079);
             Point p_HighwayRight_Drums = new Point(1382, 1079);
-            Point p_MultiplierStart_Drums = new Point(1256, 664);
-            Point p_MultiplierEnd_Drums = new Point(1258, 666);
+            Point p_MultiplierStart_Drums = new Point(1256, 676);
+            Point p_MultiplierEnd_Drums = new Point(1258, 678);
 
             Point p_HighwayLeft_Guitar = new Point(508, 1079); 
             Point p_HighwayRight_Guitar = new Point(1412, 1079);
@@ -47,37 +47,37 @@ namespace PixelReaderClient
             //Point p_StarPowerBarEnd = new Point(1200, 720);
             //Point p_StarPowerHighwayA = new Point(585, 1060);
             //Point p_StarPowerHighwayB = new Point(615, 990);
-
-
-            List<Point> ComboMeter = new List<Point>();
-
-            ComboMeter.Add(new Point(1192, 680));
-            ComboMeter.Add(new Point(1187, 671));
-            ComboMeter.Add(new Point(1183, 663));
-            ComboMeter.Add(new Point(1179, 655));
-            ComboMeter.Add(new Point(1174, 647));
-            ComboMeter.Add(new Point(1170, 639));
-            ComboMeter.Add(new Point(1166, 632));
-            ComboMeter.Add(new Point(1161, 625));
-            ComboMeter.Add(new Point(1158, 618));
-            ComboMeter.Add(new Point(1154, 612));
+            List<Point> ComboMeter = new List<Point>()
+            {
+                new Point(1192, 680),
+                new Point(1187, 671),
+                new Point(1183, 663),
+                new Point(1179, 655),
+                new Point(1174, 647),
+                new Point(1170, 639),
+                new Point(1166, 632),
+                new Point(1161, 625),
+                new Point(1158, 618),
+                new Point(1154, 612)
+            };
 
             Color c_EmptyComboColor = Color.FromArgb(255, 1, 1, 1); //Black
             Color c_MultiplierColourTwo = Color.FromArgb(255, 241, 200, 0); //Yellow
-            Color c_MultiplierColourFour = Color.FromArgb(255, 158, 239, 159); //Green
-            Color c_MultiplierColourEight = Color.FromArgb(255, 191, 135, 213); //Purple
+            Color c_MultiplierColourThree = Color.FromArgb(255, 158, 239, 159); //Green
+            Color c_MultiplierColourFour = Color.FromArgb(255, 191, 135, 213); //Purple
             Color c_StarPowerColour = Color.FromArgb(255, 106, 203, 203); //Light blue
 
             Dictionary<string, Color> c_MultiplierColours = new Dictionary<string, Color> {
                 { "0 Empty", c_EmptyComboColor },
                 { "1 2x", c_MultiplierColourTwo },
-                { "2 4x", c_MultiplierColourFour },
-                { "3 8x", c_MultiplierColourEight },
+                { "2 3x", c_MultiplierColourThree },
+                { "3 4x", c_MultiplierColourFour },
                 { "4 Star Power", c_StarPowerColour } };
 
             string lastMultiplier = "0";
             //int darkThreshold = 2;
             int highwayThreshold = 600;
+            bool isInGame = false;
             bool isPlaying = false;
             //int LastCombo = 0;
             Color LastColor = Color.Empty;
@@ -90,14 +90,22 @@ namespace PixelReaderClient
             try
             {
                 while (true)
-                {
-                    
-
+                {                   
                     string finalOutput = "";
                     if (GetActiveWindowTitle() == "Clone Hero")
                     {
+                        if(!isInGame)
+                        {
+                            isInGame = true;
+                            Console.WriteLine("Game is active");
+                        }
+
                         //Reading Pixels...
                         RefreshScreenCapture();
+
+                        //int sum = SumColor(GetColorOfPixel(isFourLaneHighway ? p_HighwayLeft_Drums : p_HighwayLeft_Guitar));
+
+                        //Console.WriteLine($"Threshold {sum} / {highwayThreshold}");
 
                         //Check play state
                         if (SumColor(GetColorOfPixel(isFourLaneHighway ? p_HighwayLeft_Drums : p_HighwayLeft_Guitar)) > highwayThreshold &&
@@ -105,6 +113,7 @@ namespace PixelReaderClient
                         {
                             if (!isPlaying) { 
                                 isPlaying = true;
+                                Console.WriteLine("Playing");
                                 TransmitMessage($"{SpecialEventType},{PatternChangeNote},{(lastMultiplier == "4" ? 1 : 0)},0,0,",stream); //Set to blank (or SP if it's active)                             
                             }
 
@@ -114,6 +123,7 @@ namespace PixelReaderClient
                             if (isPlaying)
                             {
                                 isPlaying = false;
+                                Console.WriteLine("Stopped");
                                 TransmitMessage($"{SpecialEventType},{PatternChangeNote},{(lastMultiplier == "4" ? 0 : 2)},0,0,", stream); //Set to idle                           
                             }
                         }
@@ -140,11 +150,11 @@ namespace PixelReaderClient
                             //Multiplier colour      
                             try
                             {
-                                Color MultiplierColour = isFourLaneHighway ? GetAverage(GetColorOfManyPixels(p_MultiplierStart_Drums, p_MultiplierEnd_Drums)) : GetAverage(GetColorOfManyPixels(p_MultiplierStart_Guitar, p_MultiplierEnd_Guitar));
-
+                                Color MultiplierColour = isFourLaneHighway ? 
+                                    GetAverage(GetColorOfManyPixels(p_MultiplierStart_Drums, p_MultiplierEnd_Drums)) 
+                                    : GetAverage(GetColorOfManyPixels(p_MultiplierStart_Guitar, p_MultiplierEnd_Guitar));
                                 if (GetDistance(MultiplierColour, LastColor) > colourChangeDelta)
                                 {
-                                    //Console.WriteLine($"------Changed!-----");
                                     var lowest = 99999;
                                     KeyValuePair<string, Color> closest = KeyValuePair.Create("", Color.Empty);
 
@@ -153,6 +163,7 @@ namespace PixelReaderClient
                                     {
                                         var mcol = entry.Value;
                                         var dist = GetDistance(mcol, MultiplierColour);
+
                                         if (dist < lowest)
                                         {
                                             lowest = dist;
@@ -160,7 +171,7 @@ namespace PixelReaderClient
                                         }
                                     }
 
-                                    Console.WriteLine($"{closest.Key}");
+                                    Console.WriteLine();
                                     finalOutput += $"{SpecialEventType},{PatternChangeNote},{(closest.Key.Substring(0, 1) == "4" ? 1 : 0)},0,0,";
                                 }
 
@@ -182,6 +193,11 @@ namespace PixelReaderClient
                     }
                     else
                     {
+                        if (isInGame)
+                        {
+                            isInGame = false;
+                            Console.WriteLine("Game is not active");
+                        }
                         Thread.Sleep(1000 / 5);
                     }
                 }
@@ -216,9 +232,9 @@ namespace PixelReaderClient
 
             List<Color> output = new List<Color>();  
 
-            for (int h = 0; h < space.Height; h++)
+            for (int h = startlocation.Y; h <= endlocation.Y; h++)
             {
-                for (int w = 0; w < space.Width; w++)
+                for (int w = startlocation.X; w <= endlocation.X; w++)
                 {
                     output.Add(bitmap_frame.GetPixel(w, h));
                 }
