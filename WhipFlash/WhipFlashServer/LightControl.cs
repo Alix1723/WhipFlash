@@ -26,6 +26,8 @@ namespace WhipFlashServer
         int FlamNotesTimeThreshold; //ms between flam hits
         float FlamNotesVelocityThreshold; //How hard to hit to flam (and not e.g. ghost)
 
+        int GlobalBrightnessValue; //1-255;
+
         //Manage colour/vel values and output to lights here
         int updatesPerSecond;
 
@@ -235,6 +237,15 @@ namespace WhipFlashServer
                     //Refresh strip
                     if (!debugmode)
                     {
+                        if(GlobalBrightnessValue < 255)
+                        {
+                            //rescale 
+                            for(int clr = 0; clr < stripStack.Length; clr++)
+                            {
+                                stripStack[clr] = Colour.MultiplyColours(stripStack[clr], (float)(GlobalBrightnessValue / 255.0f));
+                            }
+                        }
+
                         strip.SetStrip(stripStack);
                     }
                     await Task.Delay(1000 / updatesPerSecond);
@@ -335,15 +346,14 @@ namespace WhipFlashServer
 
         public void SetPatternLayer(int patternIndex)
         {
-            try
+            if (patternIndex>=0 && patternIndex < PatternLayers.Length)
             {
                 currentPatternLayer = PatternLayers[patternIndex];
             }
-            catch(ArgumentOutOfRangeException)
+            else
             {
-                Console.Write("Pattern Layer {} unavailable, resetting to 0...");
-                currentPatternLayer = PatternLayers[0];
-            }
+                Console.WriteLine($"Can't change to pattern {patternIndex}");
+            }        
         }
 
         public void LoadParameters(string filepath)
@@ -366,6 +376,7 @@ namespace WhipFlashServer
             outLc.FlamNotesDetection = FlamNotesDetection;
             outLc.FlamNotesTimeThreshold = FlamNotesTimeThreshold;
             outLc.FlamNotesVelocityThreshold = FlamNotesVelocityThreshold;
+            outLc.GlobalBrightnessValue = GlobalBrightnessValue;
             outLc.HitDecayRate = decayValue;
             outLc.IntensityDecayRate = intensityDecayRate;
             outLc.IntensityGain = intensityGain;
@@ -387,6 +398,7 @@ namespace WhipFlashServer
             this.FlamNotesDetection = conf.FlamNotesDetection;
             this.FlamNotesTimeThreshold = conf.FlamNotesTimeThreshold;
             this.FlamNotesVelocityThreshold = conf.FlamNotesVelocityThreshold;
+            this.GlobalBrightnessValue = Math.Clamp(conf.GlobalBrightnessValue, 1, 255);
             this.decayValue = conf.HitDecayRate;
             this.intensityDecayRate = conf.IntensityDecayRate;
             this.c_IntensityColour = conf.ColourIntensityHighlight;

@@ -29,6 +29,9 @@ namespace WhipFlashServer
         public float FlamNotesVelocityThreshold; //How hard to hit to flam (and not e.g. ghost)
 
         [XmlElement]
+        public int GlobalBrightnessValue;
+
+        [XmlElement]
         public Colour ColourIntensityHighlight;
 
         [XmlElement]
