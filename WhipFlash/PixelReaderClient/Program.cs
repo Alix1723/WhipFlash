@@ -16,7 +16,7 @@ namespace PixelReaderClient
         static Point monitorOffset = new Point(0, 0); //deal with multi     
         static Size frameSize = new Size(1920, 1080);
         static int updatesPerSecond = 30;
-        static bool isFourLaneHighway = true; //drums = true, guitar/anything else = false
+        static bool isFourLaneHighway = false; //drums = true, guitar/anything else = false
 
         static void Main(string[] args)
         {
@@ -33,13 +33,13 @@ namespace PixelReaderClient
             NetworkStream stream = client.GetStream();
 
             Console.WriteLine("Reading for pixels from Clone Hero...");
-            Point p_HighwayLeft_Drums = new Point(538, 1079);
-            Point p_HighwayRight_Drums = new Point(1382, 1079);
-            Point p_MultiplierStart_Drums = new Point(1256, 676);
-            Point p_MultiplierEnd_Drums = new Point(1258, 678);
+            Point p_HighwayLeft_Drums = new Point(520, 1079);
+            Point p_HighwayRight_Drums = new Point(1398, 1079);
+            Point p_MultiplierStart_Drums = new Point(1255, 675);
+            Point p_MultiplierEnd_Drums = new Point(1260, 680);
 
-            Point p_HighwayLeft_Guitar = new Point(508, 1079); 
-            Point p_HighwayRight_Guitar = new Point(1412, 1079);
+            Point p_HighwayLeft_Guitar = new Point(520, 1079); 
+            Point p_HighwayRight_Guitar = new Point(1398, 1079);
             Point p_MultiplierStart_Guitar = new Point(1272, 664); 
             Point p_MultiplierEnd_Guitar = new Point(1274, 666);
 
@@ -76,7 +76,7 @@ namespace PixelReaderClient
 
             string lastMultiplier = "0";
             //int darkThreshold = 2;
-            int highwayThreshold = 600;
+            int highwayThreshold = 390;
             bool isInGame = false;
             bool isPlaying = false;
             //int LastCombo = 0;
@@ -86,6 +86,8 @@ namespace PixelReaderClient
             int SpecialEventType = 100;
             //int ComboChangeNote = 1;
             int PatternChangeNote = 1;
+
+            bool sendKeystrokeOnEnter = true; //For stream control
 
             try
             {
@@ -98,14 +100,11 @@ namespace PixelReaderClient
                         {
                             isInGame = true;
                             Console.WriteLine("Game is active");
+                            TransmitMessage($"{SpecialEventType},{PatternChangeNote},{(2)},0,0,", stream); //Set to idle  
                         }
 
                         //Reading Pixels...
                         RefreshScreenCapture();
-
-                        //int sum = SumColor(GetColorOfPixel(isFourLaneHighway ? p_HighwayLeft_Drums : p_HighwayLeft_Guitar));
-
-                        //Console.WriteLine($"Threshold {sum} / {highwayThreshold}");
 
                         //Check play state
                         if (SumColor(GetColorOfPixel(isFourLaneHighway ? p_HighwayLeft_Drums : p_HighwayLeft_Guitar)) > highwayThreshold &&
@@ -114,6 +113,7 @@ namespace PixelReaderClient
                             if (!isPlaying) { 
                                 isPlaying = true;
                                 Console.WriteLine("Playing");
+                                //if (sendKeystrokeOnEnter) { KeySender.ForwardKeystroke(WindowsInputLib.Native.VirtualKeyCode.OpenBrackets, "OBS"); }
                                 TransmitMessage($"{SpecialEventType},{PatternChangeNote},{(lastMultiplier == "4" ? 1 : 0)},0,0,",stream); //Set to blank (or SP if it's active)                             
                             }
 
@@ -124,7 +124,7 @@ namespace PixelReaderClient
                             {
                                 isPlaying = false;
                                 Console.WriteLine("Stopped");
-                                TransmitMessage($"{SpecialEventType},{PatternChangeNote},{(lastMultiplier == "4" ? 0 : 2)},0,0,", stream); //Set to idle                           
+                                TransmitMessage($"{SpecialEventType},{PatternChangeNote},{(2)},0,0,", stream); //Set to idle                           
                             }
                         }
 
@@ -168,11 +168,12 @@ namespace PixelReaderClient
                                         {
                                             lowest = dist;
                                             closest = entry;
-                                        }
+                                        }                                      
                                     }
 
-                                    Console.WriteLine();
-                                    finalOutput += $"{SpecialEventType},{PatternChangeNote},{(closest.Key.Substring(0, 1) == "4" ? 1 : 0)},0,0,";
+                                    lastMultiplier = closest.Key.Substring(0, 1);
+                                    Console.WriteLine(closest.Key);
+                                    finalOutput += $"{SpecialEventType},{PatternChangeNote},{(lastMultiplier == "4" ? 1 : 0)},0,0,";
                                 }
 
                                 LastColor = MultiplierColour;
@@ -197,6 +198,7 @@ namespace PixelReaderClient
                         {
                             isInGame = false;
                             Console.WriteLine("Game is not active");
+                            TransmitMessage($"{SpecialEventType},{PatternChangeNote},{(0)},0,0,", stream); //Set to blank
                         }
                         Thread.Sleep(1000 / 5);
                     }

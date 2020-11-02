@@ -1,5 +1,6 @@
 ﻿using Commons.Music.Midi;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.ConstrainedExecution;
@@ -14,6 +15,19 @@ namespace MidiJunctionClient
 
             Console.WriteLine("MIDI Message splitter client");
             var testmode = false;
+
+            var remapNotes = true;
+
+            //remap MIDI notes here (src,target)
+            Dictionary<int, int> noteMapping = new Dictionary<int, int> 
+            { 
+                { 39, 38 }, //Snare Rim -> Snare
+                { 28, 26 }, //Lcymbal -> Hihat 
+                { 52, 51 }, //Ride bell -> Ride
+                { 53, 51 }, //Mcymbal -> Ride
+                { 59, 49 }, //xLCymbal -> RCymbal
+
+            };
 
             string targetAddress = "127.0.0.1";
             int targetPort = 5005;
@@ -104,9 +118,25 @@ namespace MidiJunctionClient
                     Console.WriteLine($"{outputs[0]},{outputs[1]},{outputs[2]},{outputs[3]},{outputs[4]}");
                     if (output != null)
                     {
+                        if (remapNotes)
+                        {
+                            int noteNumberIn = e.Data[1];
+                            byte noteNumberOut = 0;                       
+
+                            if(noteMapping.ContainsKey(noteNumberIn))
+                            {
+                                Console.WriteLine($"Remapping note {noteNumberIn} to {noteMapping[noteNumberIn]}");
+
+                                noteNumberOut = (byte)noteMapping[noteNumberIn];
+                                e.Data[1] = noteNumberOut;
+                            }
+                        }
+
                         output.Send(e.Data, 0, e.Data.Length, e.Timestamp);
                     }
                 };
+
+                Console.ReadKey();
             }
             finally
             {
