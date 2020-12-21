@@ -43,6 +43,8 @@ namespace WhipFlashServer
         [XmlElement]
         public int UpdatesPerSecond;
 
+        [XmlElement]
+        public CurveType HitDecayCurveType;
 
         [XmlElement]
         public float HitDecayRate;
@@ -85,5 +87,13 @@ namespace WhipFlashServer
             writer.Close();
             Console.WriteLine("Save successful.");
         }
-    }   
+    }
+
+    public enum CurveType
+    {
+        Default = 0, //Linear
+        Smooth = 1, //Smooth (Sinewave)
+        Fast = 2,   //Quickly decays
+        Slow = 3    //Slowly decays
+    }
 }

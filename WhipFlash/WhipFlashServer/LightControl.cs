@@ -33,10 +33,12 @@ namespace WhipFlashServer
 
         //Vel (envelope) control
         float decayValue;
-        float offValueCap = 0.002f;
+        float offValueCap = 0.0001f;
 
         float intensityDecayRate;
-        float intensityGain; 
+        float intensityGain;
+
+        CurveType decayCurveType;
 
         //Outputs
         Colour[] stripStack;
@@ -44,14 +46,19 @@ namespace WhipFlashServer
 
         //State information
         bool debugmode;
-        
+        float fixedUpdateTimeDelta;
         Colour c_IntensityColour;
 
         public LightControl(int striplength = 0, bool isDebug = false, LightsConfiguration inputConfig = null)
         {
+            Initialise(striplength, isDebug, inputConfig);
+        }
+
+        public void Initialise(int striplength = 0, bool isDebug = false, LightsConfiguration inputConfig = null)
+        {
             debugmode = isDebug;
 
-            if(inputConfig!=null)
+            if (inputConfig != null)
             {
                 SetCurrentConfig(inputConfig);
             }
@@ -74,8 +81,12 @@ namespace WhipFlashServer
 
             currentPatternLayer = PatternLayers[0];
 
+            fixedUpdateTimeDelta = (1000 / updatesPerSecond);
+            Console.WriteLine($"Running at {updatesPerSecond} updates/sec ({fixedUpdateTimeDelta}ms frametime)");
             var bgtask = Task.Run(UpdateValues);
         }
+
+        int temporaryCount = 0;
 
         public void ProcessEvent(MidiEvent eventIn)
         {
@@ -84,41 +95,61 @@ namespace WhipFlashServer
                 || eventIn.EventType == (int)EventTypes.NoteOff 
                 || eventIn.EventType == (int)EventTypes.HitOn && eventIn.NoteVelocity > 0)
             {
-                //Filter to specific note nums#
-                foreach (LightChannel curChannel in LightChannels)
+
+                if (false)//eventIn.NoteNumber == 35) temporary hardcoded note for hi hat pedal close
                 {
-                    for (int i = 0; i < curChannel.ChannelTriggerNotes.Length; i++)
+                    //temporary
+                    if ((temporaryCount + 1) >= PatternLayers.Length)
+                    { temporaryCount = 0; }
+                    else
                     {
-                        if (eventIn.NoteNumber == curChannel.ChannelTriggerNotes[i])
+                        temporaryCount++;
+                    }
+
+                    SetPatternLayer(temporaryCount);
+                }
+                else
+                {
+
+                    //Filter to specific note nums#
+                    foreach (LightChannel curChannel in LightChannels)
+                    {
+                        for (int i = 0; i < curChannel.ChannelTriggerNotes.Length; i++)
                         {
-                            if (eventIn.EventType == (int)EventTypes.NoteOff)
+                            if (eventIn.NoteNumber == curChannel.ChannelTriggerNotes[i])
                             {
-                                curChannel.SetHitValue(0f);
-                            }
-                            else
-                            {
-                                curChannel.SetHitValue((eventIn.NoteVelocity / 127f));
-                                curChannel.SetNoteIndex(i);
-
-                                int noteDelta = curChannel.GetTimeFromLastHit(eventIn.TimeStamp);
-
-                                //Flams and fast notes
-                                if (noteDelta < FlamNotesTimeThreshold & FlamNotesDetection)
+                                if (eventIn.EventType == (int)EventTypes.NoteOff && KeysMode)
                                 {
-                                    if (curChannel.HitValue > FlamNotesVelocityThreshold)
+                                    curChannel.SetHitValue(0f);
+                                }
+                                else
+                                {
+                                    if (eventIn.NoteVelocity > 0)
                                     {
-                                        curChannel.SetIntensity(1);
+                                        curChannel.SetHitValue((eventIn.NoteVelocity / 127f));
+                                        curChannel.SetNoteIndex(i);
+
+                                        int noteDelta = curChannel.GetTimeFromLastHit(eventIn.TimeStamp);
+
+                                        //Flams and fast notes
+                                        if (noteDelta < FlamNotesTimeThreshold & FlamNotesDetection)
+                                        {
+                                            if (curChannel.HitValue > FlamNotesVelocityThreshold)
+                                            {
+                                                curChannel.SetIntensity(1);
+                                            }
+                                        }
+                                        else if (noteDelta < FastNoteTimeThreshold & FastNotesDetection)
+                                        {
+                                            if (curChannel.HitValue > FastNoteVelocityThreshold)
+                                            {
+                                                curChannel.SetIntensity(Math.Min(curChannel.ChannelIntensity + (curChannel.HitValue * 0.15f), 1)); //todo: configurable
+                                            }
+                                        }
                                     }
                                 }
-                                else if (noteDelta < FastNoteTimeThreshold & FastNotesDetection)
-                                {
-                                    if (curChannel.HitValue > FastNoteVelocityThreshold)
-                                    {
-                                        curChannel.SetIntensity(Math.Min(curChannel.ChannelIntensity + (curChannel.HitValue * 0.15f), 1)); //todo: configurable
-                                    }
-                                }
+                                break;
                             }
-                            break;
                         }
                     }
                 }
@@ -167,7 +198,7 @@ namespace WhipFlashServer
                         LightChannel currentChannel = LightChannels[channelIndex];
 
                         //Apply pattern layers
-                        if (currentPatternLayer.PatternLayerType != PatternType.Default)
+                        if (currentPatternLayer.PatternLayerType != PatternType.Default && !currentChannel.ChannelIgnoresPatterns)
                         {
                             if (currentPatternLayer.LayerAppliesToWholeChannels)
                             {
@@ -195,9 +226,11 @@ namespace WhipFlashServer
                         //Hit colours
                         if (currentChannel.HitValue >= 0)
                         {
-                            if (currentChannel.HitValue <= offValueCap)
+                            if (currentChannel.HitValue < offValueCap)
                             {
+                                Console.WriteLine($"Hitvalue is {currentChannel.HitValue} so it's being capped now");
                                 currentChannel.SetHitValue(-1f);
+                                
                             }
 
                             if (currentPatternLayer.LayerOverwritesHitColours)
@@ -219,7 +252,7 @@ namespace WhipFlashServer
                             }
     
                             //Envelope control happens here
-                            if (!KeysMode) { currentChannel.DecayHitValue(decayValue); } 
+                            if (!KeysMode && currentChannel.HitValue > 0) { currentChannel.DecayHitValue(decayValue, decayCurveType, fixedUpdateTimeDelta); }  //todo: configure
                         }
 
                         if (currentChannel.ChannelIntensity > 0)
@@ -248,7 +281,7 @@ namespace WhipFlashServer
 
                         strip.SetStrip(stripStack);
                     }
-                    await Task.Delay(1000 / updatesPerSecond);
+                    await Task.Delay((int)fixedUpdateTimeDelta);
                 }
             }
             catch (Exception e)
@@ -404,6 +437,7 @@ namespace WhipFlashServer
             this.c_IntensityColour = conf.ColourIntensityHighlight;
 
             this.intensityGain = conf.IntensityGain;
+            this.decayCurveType = conf.HitDecayCurveType;
             Console.WriteLine("Set lights config");
         }
 
@@ -424,5 +458,5 @@ namespace WhipFlashServer
         HiHatPedal = 185,
         SpecialEvent = 100 //Special events controlled by non-instruments
             //NV 1 is Combo (v = 0-10), NV 2 is Multiplier&SP (V = 0-5)
-    }
+    }   
 }
