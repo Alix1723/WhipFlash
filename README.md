@@ -12,6 +12,10 @@ Contains:
 
 https://www.youtube.com/watch?v=pHzCSnUrR5Q
 
+# Example jam
+
+https://streamable.com/o2siv0
+
 The setup I use at the moment is:
 
 Kit plugged in via USB to Raspberry Pi 3b+;
